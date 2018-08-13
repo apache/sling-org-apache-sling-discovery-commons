@@ -22,7 +22,7 @@
  *
  * @version 1.2.0
  */
-@Version("1.2.0")
+@Version("1.2.1")
 package org.apache.sling.discovery.commons;
 
 import org.osgi.annotation.versioning.Version;

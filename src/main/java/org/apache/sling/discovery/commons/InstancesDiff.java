@@ -26,14 +26,13 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import org.apache.sling.discovery.ClusterView;
 import org.apache.sling.discovery.InstanceDescription;
 import org.apache.sling.discovery.InstanceFilter;
 import org.apache.sling.discovery.TopologyEvent;
 import org.apache.sling.discovery.TopologyView;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The {@code InstancesDiff} allows to combine and filter two collections of {@code InstanceDescription} instances,
@@ -95,7 +94,7 @@ public final class InstancesDiff {
      *              empty collection of instances.
      * @throws IllegalArgumentException if either of the collections contains duplicated Sling identifiers.
      */
-    public InstancesDiff(@Nonnull TopologyEvent event) {
+    public InstancesDiff(@NotNull TopologyEvent event) {
         this(instancesOrEmpty(event.getOldView()), instancesOrEmpty(event.getNewView()));
     }
 
@@ -107,7 +106,7 @@ public final class InstancesDiff {
      * @param newView the non {@code null} new topology view form which the new collection is used for computing.
      * @throws IllegalArgumentException if either of the collections contains duplicated Sling identifiers.
      */
-    public InstancesDiff(@Nonnull TopologyView oldView, @Nonnull TopologyView newView) {
+    public InstancesDiff(@NotNull TopologyView oldView, @NotNull TopologyView newView) {
         this(oldView.getInstances(), newView.getInstances());
     }
 
@@ -119,7 +118,7 @@ public final class InstancesDiff {
      * @param newView the non {@code null} new cluster view used for computing.
      * @throws IllegalArgumentException if either of the collections contains duplicated Sling identifiers.
      */
-    public InstancesDiff(@Nonnull ClusterView oldView, @Nonnull ClusterView newView) {
+    public InstancesDiff(@NotNull ClusterView oldView, @NotNull ClusterView newView) {
         this(oldView.getInstances(), newView.getInstances());
     }
 
@@ -132,7 +131,7 @@ public final class InstancesDiff {
      * @param <T> the type of instance which must extend {@code InstanceDescription}.
      * @throws IllegalArgumentException if either of the collections contains duplicated Sling identifiers.
      */
-    public <T extends InstanceDescription> InstancesDiff(@Nonnull Collection<T> oldInstances, @Nonnull Collection<T> newInstances) {
+    public <T extends InstanceDescription> InstancesDiff(@NotNull Collection<T> oldInstances, @NotNull Collection<T> newInstances) {
         this.newInstances = getInstancesMap(newInstances);
         this.oldInstances = getInstancesMap(oldInstances);
     }
@@ -150,7 +149,7 @@ public final class InstancesDiff {
      * @return the {@code InstanceCollection} collection containing the {@code InstanceDescription} instances
      *         from both collections.
      */
-    @Nonnull
+    @NotNull
     public InstanceCollection all(boolean retainFromNewCollection) {
         return new InstanceCollection(partitionAll(retainFromNewCollection));
     }
@@ -162,7 +161,7 @@ public final class InstancesDiff {
      * @return the {@code InstanceCollection} collection containing the instances in the new
      *         topology collection but not in the old collection.
      */
-    @Nonnull
+    @NotNull
     public InstanceCollection added() {
         return new InstanceCollection(partitionAdded());
     }
@@ -173,7 +172,7 @@ public final class InstancesDiff {
      *
      * @return the {@code InstanceSet} set containing the instances in the old collection but not in the new collection.
      */
-    @Nonnull
+    @NotNull
     public InstanceCollection removed() {
         return new InstanceCollection(partitionRemoved());
     }
@@ -190,7 +189,7 @@ public final class InstancesDiff {
      * @return the {@code InstanceCollection} collection containing the {@code InstanceDescription} instances
      *         contained in both collections.
      */
-    @Nonnull
+    @NotNull
     public InstanceCollection retained(boolean retainFromNewCollection) {
         return new InstanceCollection(partitionRetained(retainFromNewCollection));
     }
@@ -210,14 +209,14 @@ public final class InstancesDiff {
      * @return the {@code InstanceCollection} collection containing the {@code InstanceDescription} instances
      *         contained in both views.
      */
-    @Nonnull
+    @NotNull
     public InstanceCollection retained(boolean retainFromNewCollection, boolean propertyChanged) {
         return new InstanceCollection(partitionRetained(retainFromNewCollection, propertyChanged));
     }
 
     //
 
-    @Nonnull
+    @NotNull
     private Map<String, InstanceDescription> partitionAll(boolean retainFromNewCollection) {
         Map<String, InstanceDescription> partition = new HashMap<String, InstanceDescription>();
         if (retainFromNewCollection) {
@@ -230,21 +229,21 @@ public final class InstancesDiff {
         return partition;
     }
 
-    @Nonnull
+    @NotNull
     private Map<String, InstanceDescription> partitionRemoved() {
         Map<String, InstanceDescription> partition = new HashMap<String, InstanceDescription>(oldInstances);
         partition.keySet().removeAll(newInstances.keySet());
         return partition;
     }
 
-    @Nonnull
+    @NotNull
     private Map<String, InstanceDescription> partitionAdded() {
         Map<String, InstanceDescription> partition = new HashMap<String, InstanceDescription>(newInstances);
         partition.keySet().removeAll(oldInstances.keySet());
         return partition;
     }
 
-    @Nonnull
+    @NotNull
     private Map<String, InstanceDescription> partitionRetained(boolean retainFromNewCollection, boolean propertyChanged) {
         Map<String, InstanceDescription> partition = new HashMap<String, InstanceDescription>();
         for (Map.Entry<String, InstanceDescription> oldEntry : oldInstances.entrySet()) {
@@ -261,7 +260,7 @@ public final class InstancesDiff {
         return partition;
     }
 
-    @Nonnull
+    @NotNull
     private Map<String, InstanceDescription> partitionRetained(boolean retainFromNewCollection) {
         Map<String, InstanceDescription> partition = new HashMap<String, InstanceDescription>();
         if (retainFromNewCollection) {
@@ -274,13 +273,13 @@ public final class InstancesDiff {
         return partition;
     }
 
-    @Nonnull
+    @NotNull
     private static Set<InstanceDescription> instancesOrEmpty(@Nullable TopologyView topologyView) {
         return (topologyView != null) ? topologyView.getInstances() : Collections.<InstanceDescription>emptySet();
     }
 
-    @Nonnull
-    private static <T extends InstanceDescription> Map<String, InstanceDescription> getInstancesMap(@Nonnull Collection<T> instances) {
+    @NotNull
+    private static <T extends InstanceDescription> Map<String, InstanceDescription> getInstancesMap(@NotNull Collection<T> instances) {
         Map<String, InstanceDescription> instancesMap = new HashMap<String, InstanceDescription>();
         for (InstanceDescription instance : instances) {
             String slingId = instance.getSlingId();
@@ -360,7 +359,7 @@ public final class InstancesDiff {
          * @param filter the filter to be applied on the instances
          * @return {@code this}
          */
-        @Nonnull
+        @NotNull
         public InstanceCollection filterWith(@Nullable InstanceFilter filter) {
             if (filter != null) {
                 filters.add(filter);
@@ -373,7 +372,7 @@ public final class InstancesDiff {
          *
          * @return {@code this}
          */
-        @Nonnull
+        @NotNull
         public InstanceCollection isLocal() {
             filters.add(LOCAL_INSTANCE);
             return this;
@@ -384,7 +383,7 @@ public final class InstancesDiff {
          *
          * @return {@code this}
          */
-        @Nonnull
+        @NotNull
         public InstanceCollection isNotLocal() {
             filters.add(NOT_LOCAL_INSTANCE);
             return this;
@@ -395,7 +394,7 @@ public final class InstancesDiff {
          *
          * @return {@code this}
          */
-        @Nonnull
+        @NotNull
         public InstanceCollection isLeader() {
             filters.add(LEADER_INSTANCE);
             return this;
@@ -406,7 +405,7 @@ public final class InstancesDiff {
          *
          * @return {@code this}
          */
-        @Nonnull
+        @NotNull
         public InstanceCollection isNotLeader() {
             filters.add(NOT_LEADER_INSTANCE);
             return this;
@@ -422,7 +421,7 @@ public final class InstancesDiff {
          * @param clusterView the cluster view used to filter the instances
          * @return {@code this}
          */
-        @Nonnull
+        @NotNull
         public InstanceCollection isInClusterView(@Nullable ClusterView clusterView) {
             if (clusterView != null) {
                 filters.add(new InClusterView(clusterView));
@@ -440,7 +439,7 @@ public final class InstancesDiff {
          * @param clusterView the cluster view used to filter the instances
          * @return {@code this}
          */
-        @Nonnull
+        @NotNull
         public InstanceCollection isNotInClusterView(@Nullable ClusterView clusterView) {
             if (clusterView != null) {
                 filters.add(new NotFilter(new InClusterView(clusterView)));
@@ -453,7 +452,7 @@ public final class InstancesDiff {
          *
          * @return the filtered collection of instances.
          */
-        @Nonnull
+        @NotNull
         public Collection<InstanceDescription> get() {
             return applyFilters();
         }
@@ -464,11 +463,11 @@ public final class InstancesDiff {
          * Instances of this class can only be obtained through the {@code InstancesDiff} class.
          * @param instances the map of instances to be filtered
          */
-        private InstanceCollection(@Nonnull Map<String, InstanceDescription> instances) {
+        private InstanceCollection(@NotNull Map<String, InstanceDescription> instances) {
             this.instances = instances;
         }
 
-        @Nonnull
+        @NotNull
         private Collection<InstanceDescription> applyFilters() {
             Iterator<Map.Entry<String, InstanceDescription>> entries = instances.entrySet().iterator();
             for ( ; entries.hasNext() ; ) {
