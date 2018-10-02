@@ -27,6 +27,7 @@ import javax.jcr.Session;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
+import javax.json.JsonReader;
 import javax.json.JsonReaderFactory;
 
 import org.apache.sling.api.resource.ResourceResolver;
@@ -57,8 +58,10 @@ public class DiscoveryLiteDescriptor {
         if (descriptorStr == null) {
             throw new Exception("No value available for descriptor " + OAK_DISCOVERYLITE_CLUSTERVIEW);
         }
-        JsonObject descriptor = jsonReaderFactory.createReader(new StringReader(descriptorStr)).readObject();
-        return new DiscoveryLiteDescriptor(descriptor);
+        try (JsonReader jsonReader = jsonReaderFactory.createReader(new StringReader(descriptorStr))) {
+            JsonObject descriptor = jsonReader.readObject();
+            return new DiscoveryLiteDescriptor(descriptor);
+        }
     }
     
     /** the actual descriptor **/
