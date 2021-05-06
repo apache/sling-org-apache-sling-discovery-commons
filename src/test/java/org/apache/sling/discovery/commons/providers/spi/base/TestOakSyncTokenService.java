@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.discovery.commons.providers.DummyTopologyView;
+import org.apache.sling.discovery.commons.providers.SimpleCommonsConfig;
 import org.apache.sling.discovery.commons.providers.ViewStateManager;
 import org.apache.sling.discovery.commons.providers.base.DummyListener;
 import org.apache.sling.discovery.commons.providers.base.TestHelper;
@@ -47,46 +48,6 @@ import org.slf4j.LoggerFactory;
 public class TestOakSyncTokenService {
 
     private final static Logger logger = LoggerFactory.getLogger(TestOakSyncTokenService.class);
-
-    private static final String SYNCTOKEN_PATH = "/var/discovery/commons/synctokens";
-
-    private static final String IDMAP_PATH = "/var/discovery/commons/idmap";
-
-    public final class SimpleCommonsConfig implements DiscoveryLiteConfig {
-        
-        private long bgIntervalMillis;
-        private long bgTimeoutMillis;
-
-        SimpleCommonsConfig() {
-            this(1000, -1); // defaults
-        }
-
-        SimpleCommonsConfig(long bgIntervalMillis, long bgTimeoutMillis) {
-            this.bgIntervalMillis = bgIntervalMillis;
-            this.bgTimeoutMillis = bgTimeoutMillis;
-        }
-        
-        @Override
-        public String getSyncTokenPath() {
-            return SYNCTOKEN_PATH;
-        }
-
-        @Override
-        public String getIdMapPath() {
-            return IDMAP_PATH;
-        }
-
-        @Override
-        public long getClusterSyncServiceTimeoutMillis() {
-            return bgTimeoutMillis;
-        }
-
-        @Override
-        public long getClusterSyncServiceIntervalMillis() {
-            return bgIntervalMillis;
-        }
-
-    }
 
     ResourceResolverFactory factory1;
     ResourceResolverFactory factory2;
