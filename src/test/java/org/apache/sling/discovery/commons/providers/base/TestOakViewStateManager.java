@@ -186,7 +186,7 @@ public class TestOakViewStateManager {
             // waiting for at least 2 calls to check()
             // first is synchronous, second in the background
             // and we want to ensure the background thread has started
-            assertTrue(s1.waitForCheckCounter(2, 5000));
+            assertTrue(s1.waitForCheckCounterAtMin(2, 5000));
             assertEquals(0, s2.getCheckCounter());
 
             // wait until s1 is blocked

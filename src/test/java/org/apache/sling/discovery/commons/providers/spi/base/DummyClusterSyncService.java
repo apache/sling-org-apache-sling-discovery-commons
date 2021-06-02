@@ -18,6 +18,7 @@
  */
 package org.apache.sling.discovery.commons.providers.spi.base;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,8 +63,6 @@ public class DummyClusterSyncService extends AbstractServiceWithBackgroundCheck 
 
     @Override
     public void sync(BaseTopologyView view, Runnable callback) {
-        cancelPreviousBackgroundCheck();
-
         startBackgroundCheck(debugName, new BackgroundCheck() {
 
             @Override
@@ -93,64 +92,37 @@ public class DummyClusterSyncService extends AbstractServiceWithBackgroundCheck 
         }, callback, timeoutMillis, intervalMillis);
     }
 
-    public boolean waitForCheckCounter(long minValue, long timeoutMillis) {
-        if (timeoutMillis < 0) {
-            throw new IllegalArgumentException("timeoutMillis must be 0 or positive, is: " + timeoutMillis);
-        }
-        final long timeout = System.currentTimeMillis() + timeoutMillis;
-        while (checkCounter.get() < minValue) {
-            final long delta = Math.min(10, timeout - System.currentTimeMillis());
-            if (delta <= 0) {
-                return false;
-            } else {
-                try {
-                    Thread.sleep(delta);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+    public boolean waitForCheckCounterAtMin(final long minValue, long timeoutMillis) {
+        return waitForCondition(new Callable<Boolean>() {
+
+            @Override
+            public Boolean call() throws Exception {
+                return checkCounter.get() >= minValue;
             }
-        }
-        return true;
+
+        }, timeoutMillis);
     }
 
-    public boolean waitForCheckBlockingAtMin(int minBlockedCnt, long timeoutMillis) {
-        if (timeoutMillis < 0) {
-            throw new IllegalArgumentException("timeoutMillis must be 0 or positive, is: " + timeoutMillis);
-        }
-        final long timeout = System.currentTimeMillis() + timeoutMillis;
-        while (checkBlocking.get() < minBlockedCnt) {
-            final long delta = Math.min(10, timeout - System.currentTimeMillis());
-            if (delta <= 0) {
-                return false;
-            } else {
-                try {
-                    Thread.sleep(delta);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+    public boolean waitForCheckBlockingAtMin(final int minBlockedCnt, long timeoutMillis) {
+        return waitForCondition(new Callable<Boolean>() {
+
+            @Override
+            public Boolean call() throws Exception {
+                return checkBlocking.get() >= minBlockedCnt;
             }
-        }
-        return true;
+
+        }, timeoutMillis);
     }
 
-    public boolean waitForCheckBlockingAtMax(int maxBlockedCnt, long timeoutMillis) {
-        if (timeoutMillis < 0) {
-            throw new IllegalArgumentException("timeoutMillis must be 0 or positive, is: " + timeoutMillis);
-        }
-        final long timeout = System.currentTimeMillis() + timeoutMillis;
-        while (checkBlocking.get() > maxBlockedCnt) {
-            final long delta = Math.min(10, timeout - System.currentTimeMillis());
-            if (delta <= 0) {
-                return false;
-            } else {
-                try {
-                    Thread.sleep(delta);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+    public boolean waitForCheckBlockingAtMax(final int maxBlockedCnt, long timeoutMillis) {
+        return waitForCondition(new Callable<Boolean>() {
+
+            @Override
+            public Boolean call() throws Exception {
+                return checkBlocking.get() <= maxBlockedCnt;
             }
-        }
-        return true;
+
+        }, timeoutMillis);
     }
 
     public long getCheckCounter() {
@@ -164,6 +136,51 @@ public class DummyClusterSyncService extends AbstractServiceWithBackgroundCheck 
     @Override
     public void cancelSync() {
         cancelPreviousBackgroundCheck();
+    }
+
+    public boolean waitForBackgroundCheckFinished(long timeoutMillis) {
+        return waitForCondition(new Callable<Boolean>() {
+
+            @Override
+            public Boolean call() throws Exception {
+                return !hasBackgroundCheckRunnable();
+            }
+
+        }, timeoutMillis);
+    }
+
+    public boolean hasBackgroundCheckRunnable() {
+        final BackgroundCheckRunnable r = backgroundCheckRunnable;
+        if (r == null) {
+            return false;
+        } else {
+            return !r.isDone();
+        }
+    }
+
+    private boolean waitForCondition(Callable<Boolean> condition, long timeoutMillis) {
+        if (timeoutMillis < 0) {
+            throw new IllegalArgumentException("timeoutMillis must be 0 or positive, is: " + timeoutMillis);
+        }
+        final long timeout = System.currentTimeMillis() + timeoutMillis;
+        try {
+            while (!condition.call()) {
+                final long delta = Math.min(10, timeout - System.currentTimeMillis());
+                if (delta <= 0) {
+                    // timeout
+                    break;
+                } else {
+                    try {
+                        Thread.sleep(delta);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return condition.call();
+        } catch (Exception e) {
+            throw new AssertionError("Got Exception: " + e, e);
+        }
     }
 
 }
