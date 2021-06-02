@@ -21,7 +21,6 @@ package org.apache.sling.discovery.commons.providers.base;
 import java.util.Date;
 import java.util.concurrent.locks.Lock;
 
-import org.apache.sling.commons.scheduler.ScheduleOptions;
 import org.apache.sling.commons.scheduler.Scheduler;
 import org.apache.sling.discovery.DiscoveryService;
 import org.apache.sling.discovery.TopologyView;
