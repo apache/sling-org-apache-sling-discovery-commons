@@ -70,6 +70,12 @@ public class DummyScheduler implements Scheduler {
             this.date = date;
             return this;
         }
+
+        @Override
+        public ScheduleOptions threadPoolName(String name) {
+            this.name = name;
+            return this;
+        }
     }
 
     private boolean failMode;
