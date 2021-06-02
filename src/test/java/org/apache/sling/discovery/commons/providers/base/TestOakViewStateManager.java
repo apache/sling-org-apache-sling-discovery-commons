@@ -23,12 +23,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
 import org.apache.log4j.Level;
 import org.apache.log4j.spi.RootLogger;
 import org.apache.sling.api.resource.ResourceResolverFactory;
+import org.apache.sling.commons.scheduler.Scheduler;
 import org.apache.sling.discovery.DiscoveryService;
 import org.apache.sling.discovery.TopologyEvent;
 import org.apache.sling.discovery.TopologyView;
@@ -50,7 +52,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestOakViewStateManager {
+public class TestOakViewStateManager implements DiscoveryService {
 
     protected static final Logger logger = LoggerFactory.getLogger(TestOakViewStateManager.class);
 
@@ -67,6 +69,10 @@ public class TestOakViewStateManager {
     @SuppressWarnings("unused")
     private IdMapService idMapService1;
     private String slingId1;
+
+    private Scheduler scheduler;
+
+    private TopologyView view;
 
     @Before
     public void setup() throws Exception {
@@ -96,6 +102,7 @@ public class TestOakViewStateManager {
         slingId1 = UUID.randomUUID().toString();
         idMapService1 = IdMapService.testConstructor(new SimpleCommonsConfig(), new DummySlingSettingsService(slingId1),
                 factory1);
+        scheduler = new DummyScheduler();
         logger.info("setup: end");
     }
 
@@ -147,24 +154,17 @@ public class TestOakViewStateManager {
 
     @Test
     public void testSyncServiceDelayOnFirstView_withEventDelaying() throws Exception {
-        mgr.installMinEventDelayHandler(new DiscoveryService() {
-
-            @Override
-            public TopologyView getTopology() {
-                throw new IllegalStateException("not yet impl");
-            }
-        }, null, 1);
         doTestSyncServiceDelayOnFirstView(true);
     }
 
     private void doTestSyncServiceDelayOnFirstView(boolean minEventDelayHandler) throws InterruptedException {
         final DummyListener listener = new DummyListener();
-        mgr.bind(listener);
 
         final String slingId1 = UUID.randomUUID().toString();
         final String slingId2 = UUID.randomUUID().toString();
         final String slingId3 = UUID.randomUUID().toString();
         final String clusterId = UUID.randomUUID().toString();
+        final DummyTopologyView view0 = new DummyTopologyView().addInstance(slingId1, new DefaultClusterView(clusterId), true, true);
         final DefaultClusterView cluster = new DefaultClusterView(clusterId);
         final DummyTopologyView view1 = new DummyTopologyView().addInstance(slingId1, cluster, true, true)
                 .addInstance(slingId2, cluster, false, false).addInstance(slingId3, cluster, false, false);
@@ -178,10 +178,31 @@ public class TestOakViewStateManager {
 
         try {
             mgr = new ViewStateManagerImpl(new ReentrantLock(), chain);
+            mgr.bind(listener);
+            if (minEventDelayHandler) {
+                mgr.installMinEventDelayHandler(this, scheduler, 1);
+            }
             logger.info("testSyncServiceDelayOnFirstView: start");
             mgr.handleActivated();
-            logger.info("testSyncServiceDelayOnFirstView: first call to handleNewView");
+            s1.setCheckResult(true);
+            s2.setCheckResult(true);
+            this.view = view0;
+            mgr.handleNewView(view0);
+            assertTrue(waitForCondition(new Callable<Boolean>() {
+
+                @Override
+                public Boolean call() throws Exception {
+                    return listener.countEvents() == 1;
+                }
+
+            }, 5000));
+            logger.info("testSyncServiceDelayOnFirstView: second call to handleNewView");
+            s1.setCheckResult(false);
+            s2.setCheckResult(false);
+            s1.resetCounter();
+            s2.resetCounter();
             s1.setCheckSemaphoreSetPermits(2);
+            this.view = view1;
             mgr.handleNewView(view1);
             // waiting for at least 2 calls to check()
             // first is synchronous, second in the background
@@ -230,4 +251,33 @@ public class TestOakViewStateManager {
         }
     }
 
+    private boolean waitForCondition(Callable<Boolean> condition, long timeoutMillis) {
+        if (timeoutMillis < 0) {
+            throw new IllegalArgumentException("timeoutMillis must be 0 or positive, is: " + timeoutMillis);
+        }
+        final long timeout = System.currentTimeMillis() + timeoutMillis;
+        try {
+            while (!condition.call()) {
+                final long delta = Math.min(10, timeout - System.currentTimeMillis());
+                if (delta <= 0) {
+                    // timeout
+                    break;
+                } else {
+                    try {
+                        Thread.sleep(delta);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            return condition.call();
+        } catch (Exception e) {
+            throw new AssertionError("Got Exception: " + e, e);
+        }
+    }
+
+    @Override
+    public TopologyView getTopology() {
+        return view;
+    }
 }

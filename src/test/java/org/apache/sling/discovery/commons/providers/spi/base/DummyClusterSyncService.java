@@ -125,6 +125,10 @@ public class DummyClusterSyncService extends AbstractServiceWithBackgroundCheck 
         }, timeoutMillis);
     }
 
+    public void resetCounter() {
+        checkCounter.set(0);
+    }
+
     public long getCheckCounter() {
         return checkCounter.get();
     }
