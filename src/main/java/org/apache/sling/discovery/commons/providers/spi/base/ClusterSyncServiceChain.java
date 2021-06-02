@@ -21,6 +21,7 @@ package org.apache.sling.discovery.commons.providers.spi.base;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.sling.discovery.commons.providers.BaseTopologyView;
 import org.apache.sling.discovery.commons.providers.spi.ClusterSyncService;
@@ -37,6 +38,9 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
 
     private final List<ClusterSyncService> chain;
 
+    /** counter incremented on every sync and cancel call */
+    private AtomicLong syncCnt = new AtomicLong(0);
+
     /**
      * Creates a new chain of ClusterSyncService that calls a
      * cascaded sync with the provided ClusterSyncService.
@@ -50,12 +54,16 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
     
     @Override
     public void sync(BaseTopologyView view, Runnable callback) {
+        // could also use Preconditions.checkNotNull
+        if (view == null) throw new NullPointerException("view must not be null");
+        if (callback == null) throw new NullPointerException("callback must not be null");
+
         final Iterator<ClusterSyncService> chainIt = chain.iterator();
-        chainedSync(view, callback, chainIt);
+        chainedSync(view, callback, chainIt, syncCnt.getAndIncrement());
     }
 
     private void chainedSync(final BaseTopologyView view, final Runnable callback, 
-            final Iterator<ClusterSyncService> chainIt) {
+            final Iterator<ClusterSyncService> chainIt, final long executionCnt) {
         if (!chainIt.hasNext()) {
             logger.debug("doSync: done with sync chain, invoking callback");
             callback.run();
@@ -66,14 +74,33 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
 
             @Override
             public void run() {
-                chainedSync(view, callback, chainIt);
+                if (canExecute(executionCnt)) {
+                    chainedSync(view, callback, chainIt, executionCnt);
+                }
             }
             
         });
+        canExecute(executionCnt);
+    }
+
+    /** SLING-10353 : checks if the execution can continue based on the provided executionCnt */
+    private boolean canExecute(final long executionCnt) {
+        final long currentCnt = syncCnt.get();
+        if (currentCnt > executionCnt + 1) {
+            // that means sync or cancel has been invoked in the meantime
+            // and we might have missed it
+            logger.info("canExecute : cancelling old, outdated sync ({} > {} + 1) (currentCnt > executionCnt + 1)",
+                    currentCnt, executionCnt);
+            cancelSync();
+            return false;
+        }
+        return true;
     }
 
     @Override
     public void cancelSync() {
+        // increment syncCnt to cancel any remaining old sync calls
+        syncCnt.incrementAndGet();
         for (ClusterSyncService consistencyService : chain) {
             consistencyService.cancelSync();
         }

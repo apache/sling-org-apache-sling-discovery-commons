@@ -28,6 +28,50 @@ import org.apache.sling.commons.scheduler.Scheduler;
 
 public class DummyScheduler implements Scheduler {
 
+    class DummyScheduleOptions implements ScheduleOptions {
+
+        private String name;
+        private Map<String, Serializable> config;
+        private Date date;
+
+        @Override
+        public ScheduleOptions config(Map<String, Serializable> config) {
+            this.config = config;
+            return this;
+        }
+
+        @Override
+        public ScheduleOptions name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        @Override
+        public ScheduleOptions canRunConcurrently(boolean flag) {
+            return this;
+        }
+
+        @Override
+        public ScheduleOptions onLeaderOnly(boolean flag) {
+            return this;
+        }
+
+        @Override
+        public ScheduleOptions onSingleInstanceOnly(boolean flag) {
+            return this;
+        }
+
+        @Override
+        public ScheduleOptions onInstancesOnly(String[] slingIds) {
+            return this;
+        }
+
+        public ScheduleOptions date(Date date) {
+            this.date = date;
+            return this;
+        }
+    }
+
     private boolean failMode;
 
     @Override
@@ -109,7 +153,13 @@ public class DummyScheduler implements Scheduler {
 
     @Override
     public boolean schedule(Object job, ScheduleOptions options) {
-        throw new IllegalStateException("not yet impl");
+        DummyScheduleOptions dOptions = (DummyScheduleOptions) options;
+        try {
+            fireJobAt(dOptions.name, job, dOptions.config, dOptions.date);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return true;
     }
 
     @Override
@@ -119,7 +169,7 @@ public class DummyScheduler implements Scheduler {
 
     @Override
     public ScheduleOptions NOW() {
-        throw new IllegalStateException("not yet impl");
+        return new DummyScheduleOptions().date(new Date());
     }
 
     @Override
@@ -129,7 +179,7 @@ public class DummyScheduler implements Scheduler {
 
     @Override
     public ScheduleOptions AT(Date date) {
-        throw new IllegalStateException("not yet impl");
+        return new DummyScheduleOptions().date(date);
     }
 
     @Override

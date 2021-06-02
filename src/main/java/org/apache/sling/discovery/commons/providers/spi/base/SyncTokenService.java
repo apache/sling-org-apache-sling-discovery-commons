@@ -181,7 +181,8 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
             logger.error("storeMySyncToken: could not login for storing my syncToken: "+e, e);
             return false;
         } catch (PersistenceException e) {
-            logger.error("storeMySyncToken: got PersistenceException while storing my syncToken: "+e, e);
+            logger.error("storeMySyncToken: got PersistenceException while storing my syncToken"
+                    + " (my slingId=" + slingId + ", syncToken=" + syncTokenId + "): " + e , e);
             return false;
         } finally {
             logger.trace("storeMySyncToken: end");
