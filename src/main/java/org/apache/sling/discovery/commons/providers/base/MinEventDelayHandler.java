@@ -123,6 +123,7 @@ class MinEventDelayHandler {
         final boolean triggered = runAfter(minEventDelaySecs /*seconds*/ , new Runnable() {
     
             public void run() {
+                assertCorrectThreadPool();
                 lock.lock();
                 try{
                     if (cancelCnt!=validCancelCnt) {
@@ -174,6 +175,13 @@ class MinEventDelayHandler {
         return triggered;
     }
     
+    private final void assertCorrectThreadPool() {
+        if (!Thread.currentThread().getName().contains("sling-discovery")) {
+            logger.warn("assertCorrectThreadPool : not running as part of 'discovery' thread pool."
+                    + " Check configuration and ensure 'discovery' is in 'allowedPoolNames' of 'org.apache.sling.commons.scheduler'");
+        }
+    }
+
     /**
      * run the runnable after the indicated number of seconds, once.
      * @return true if the scheduling of the runnable worked, false otherwise
@@ -187,8 +195,7 @@ class MinEventDelayHandler {
         logger.trace("runAfter: trying with scheduler.fireJob");
         final Date date = new Date(System.currentTimeMillis() + seconds * 1000);
         try {
-            theScheduler.fireJobAt(null, runnable, null, date);
-            return true;
+            return theScheduler.schedule(runnable, theScheduler.AT(date).threadPoolName("discovery"));
         } catch (Exception e) {
             logger.info("runAfter: could not schedule a job: "+e);
             return false;
