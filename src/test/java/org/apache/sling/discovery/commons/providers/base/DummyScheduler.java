@@ -23,6 +23,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.apache.sling.commons.scheduler.Job;
+import org.apache.sling.commons.scheduler.JobContext;
 import org.apache.sling.commons.scheduler.ScheduleOptions;
 import org.apache.sling.commons.scheduler.Scheduler;
 
@@ -109,11 +111,10 @@ public class DummyScheduler implements Scheduler {
     }
 
     @Override
-    public void fireJobAt(String name, final Object job, Map<String, Serializable> config, final Date date) throws Exception {
-        if (!(job instanceof Runnable)) {
-            throw new IllegalArgumentException("only runnables supported for now");
+    public void fireJobAt(final String name, final Object job, final Map<String, Serializable> config, final Date date) throws Exception {
+        if (!(job instanceof Job) && !(job instanceof Runnable)) {
+            throw new IllegalArgumentException("only runnable and job supported");
         }
-        final Runnable j = (Runnable)job;
         Runnable r = new Runnable() {
 
             @Override
@@ -126,7 +127,24 @@ public class DummyScheduler implements Scheduler {
                         Thread.yield();
                     }
                 }
-                j.run();
+                if (job instanceof Job) {
+                    Job j = (Job)job;
+                    JobContext context = new JobContext() {
+
+                        @Override
+                        public String getName() {
+                            return name;
+                        }
+
+                        @Override
+                        public Map<String, Serializable> getConfiguration() {
+                            return config;
+                        }
+                    };
+                    j.execute(context);
+                } else {
+                    ((Runnable)job).run();
+                }
             }
             
         };
