@@ -20,9 +20,12 @@ package org.apache.sling.discovery.commons.providers.base;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.apache.sling.commons.scheduler.Job;
+import org.apache.sling.commons.scheduler.JobContext;
 import org.apache.sling.commons.scheduler.ScheduleOptions;
 import org.apache.sling.commons.scheduler.Scheduler;
 
@@ -73,12 +76,24 @@ public class DummyScheduler implements Scheduler {
 
         @Override
         public ScheduleOptions threadPoolName(String name) {
-            this.name = name;
+            // not supported
             return this;
         }
     }
 
     private boolean failMode;
+
+    private Map<String,Thread> schedules = new HashMap<>();
+
+    private boolean manageSchedules;
+
+    public DummyScheduler() {
+        this(false);
+    }
+
+    public DummyScheduler(boolean manageSchedules) {
+        this.manageSchedules = manageSchedules;
+    }
 
     @Override
     public void addJob(String name, Object job, Map<String, Serializable> config, String schedulingExpression,
@@ -109,11 +124,10 @@ public class DummyScheduler implements Scheduler {
     }
 
     @Override
-    public void fireJobAt(String name, final Object job, Map<String, Serializable> config, final Date date) throws Exception {
-        if (!(job instanceof Runnable)) {
-            throw new IllegalArgumentException("only runnables supported for now");
+    public void fireJobAt(final String name, final Object job, final Map<String, Serializable> config, final Date date) throws Exception {
+        if (!(job instanceof Job) && !(job instanceof Runnable)) {
+            throw new IllegalArgumentException("only runnable and job supported");
         }
-        final Runnable j = (Runnable)job;
         Runnable r = new Runnable() {
 
             @Override
@@ -126,7 +140,37 @@ public class DummyScheduler implements Scheduler {
                         Thread.yield();
                     }
                 }
-                j.run();
+                if (manageSchedules) {
+                    synchronized(schedules) {
+                        if (schedules.get(name) != Thread.currentThread()) {
+                            // we got unscheduled
+                            System.out.println("(ignoring cancelled schedule) "
+                                    + " (currentThread " + System.identityHashCode(Thread.currentThread())
+                                    + ", scheduledThread " + System.identityHashCode(schedules.get(name)) + ")");
+                            return;
+                        }
+                        schedules.remove(name);
+                    }
+                    System.out.println("(running schedule) " + System.identityHashCode(Thread.currentThread()));
+                }
+                if (job instanceof Job) {
+                    Job j = (Job)job;
+                    JobContext context = new JobContext() {
+
+                        @Override
+                        public String getName() {
+                            return name;
+                        }
+
+                        @Override
+                        public Map<String, Serializable> getConfiguration() {
+                            return config;
+                        }
+                    };
+                    j.execute(context);
+                } else {
+                    ((Runnable)job).run();
+                }
             }
             
         };
@@ -138,6 +182,14 @@ public class DummyScheduler implements Scheduler {
             throw new IllegalStateException("failMode");
         }
         Thread th = new Thread(r);
+        if (manageSchedules) {
+            synchronized(schedules) {
+                Thread previousTh = schedules.put(name, th);
+                System.out.println("(added a schedule) " + System.identityHashCode(th)
+                    + " (previous = " + System.identityHashCode(previousTh) + ")"
+                    + " (size = " + schedules.size() + ")");
+            }
+        }
         th.setName("async test thread for "+name);
         th.setDaemon(true);
         th.start();
@@ -170,7 +222,17 @@ public class DummyScheduler implements Scheduler {
 
     @Override
     public boolean unschedule(String jobName) {
-        throw new IllegalStateException("not yet impl");
+        if (manageSchedules) {
+            final Thread removed;
+            synchronized(schedules) {
+                removed = schedules.remove(jobName);
+                System.out.println("(unscheduled) " + System.identityHashCode(removed)
+                    + " (size = " + schedules.size() + ")");
+            }
+            return removed != null;
+        } else {
+            throw new IllegalStateException("not yet impl");
+        }
     }
 
     @Override
