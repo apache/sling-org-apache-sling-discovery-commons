@@ -25,6 +25,7 @@ import org.apache.sling.commons.scheduler.Scheduler;
 import org.apache.sling.discovery.DiscoveryService;
 import org.apache.sling.discovery.TopologyView;
 import org.apache.sling.discovery.commons.providers.BaseTopologyView;
+import org.apache.sling.discovery.commons.providers.util.LogSilencer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +52,8 @@ class MinEventDelayHandler {
     
     private volatile int cancelCnt = 0;
     
+    private final LogSilencer logSilencer = new LogSilencer(logger);
+
     MinEventDelayHandler(ViewStateManagerImpl viewStateManager, Lock lock,
             DiscoveryService discoveryService, Scheduler scheduler,
             long minEventDelaySecs) {
@@ -80,17 +83,26 @@ class MinEventDelayHandler {
         if (isDelaying) {
             // already delaying, so we'll soon ask the DiscoveryServiceImpl for the
             // latest view and go ahead then
-            logger.info("handleNewView: already delaying, ignoring new view meanwhile");
+            logSilencer.infoOrDebug("handlesNewView-" + newView.getLocalClusterSyncTokenId(),
+                    "handleNewView: already delaying, ignoring new view meanwhile");
             return true;
         }
         
         if (!viewStateManager.hadPreviousView()) {
-            logger.info("handlesNewView: never had a previous view, hence no delaying applicable");
+            logSilencer.infoOrDebug("handlesNewView-" + newView.getLocalClusterSyncTokenId(),
+                    "handlesNewView: never had a previous view, hence no delaying applicable");
+            return false;
+        }
+
+        if (viewStateManager.equalsIgnoreSyncToken(newView)) {
+            logSilencer.infoOrDebug("handlesNewView-" + newView.getLocalClusterSyncTokenId(),
+                    "handlesNewView: equalsIgnoreSyncToken, hence no delaying applicable");
             return false;
         }
         
         if (viewStateManager.onlyDiffersInProperties(newView)) {
-            logger.info("handlesNewView: only properties differ, hence no delaying applicable");
+            logSilencer.infoOrDebug("handlesNewView-" + newView.getLocalClusterSyncTokenId(),
+                    "handlesNewView: only properties differ, hence no delaying applicable");
             return false;
         }
         
@@ -103,7 +115,8 @@ class MinEventDelayHandler {
         
         // thanks to force==true this will always return true
         if (!triggerAsyncDelaying(newView)) {
-            logger.info("handleNewView: could not trigger async delaying, sending new view now.");
+            logSilencer.infoOrDebug("handlesNewView-" + newView.getLocalClusterSyncTokenId(),
+                    "handleNewView: could not trigger async delaying, sending new view now.");
             viewStateManager.handleNewViewNonDelayed(newView);
         } else {
             // if triggering the async event was successful, then we should also
@@ -113,12 +126,13 @@ class MinEventDelayHandler {
             // even though there is the very unlikely possibility that the async-delay-thread
             // would compete - but even if it would, thanks to the lock.lock() that would be safe.
             // so: we're going to do a handleChanging here:
+            logger.info("handlesNewView: triggered async delaying, so now calling handleChanging..., new view = " + newView);
             viewStateManager.handleChanging();
         }
         return true;
     }
     
-    private boolean triggerAsyncDelaying(BaseTopologyView newView) {
+    private boolean triggerAsyncDelaying(final BaseTopologyView newView) {
         final int validCancelCnt = cancelCnt;
         final boolean triggered = runAfter(minEventDelaySecs /*seconds*/ , new Runnable() {
     
@@ -127,7 +141,8 @@ class MinEventDelayHandler {
                 lock.lock();
                 try{
                     if (cancelCnt!=validCancelCnt) {
-                        logger.info("asyncDelay.run: got cancelled (validCancelCnt="+validCancelCnt+", cancelCnt="+cancelCnt+"), quitting.");
+                        logSilencer.infoOrDebug("asyncDelay.run-cancel-" + newView.getLocalClusterSyncTokenId(),
+                                "asyncDelay.run: got cancelled (validCancelCnt="+validCancelCnt+", cancelCnt="+cancelCnt+"), quitting.");
                         return;
                     }
                     
@@ -144,10 +159,12 @@ class MinEventDelayHandler {
                     BaseTopologyView topology = (BaseTopologyView) t;
                     
                     if (topology.isCurrent()) {
-                        logger.info("asyncDelay.run: done delaying. got new view: "+ topology.toShortString());
+                        logSilencer.infoOrDebug("asyncDelay.run-done-" + newView.getLocalClusterSyncTokenId(),
+                                "asyncDelay.run: done delaying. got new view: "+ topology.toShortString());
                         viewStateManager.handleNewViewNonDelayed(topology);
                     } else {
-                        logger.info("asyncDelay.run: done delaying. new view (still/again) not current, delaying again");
+                        logSilencer.infoOrDebug("asyncDelay.run-done-" + newView.getLocalClusterSyncTokenId(),
+                                "asyncDelay.run: done delaying. new view (still/again) not current, delaying again");
                         triggerAsyncDelaying(topology);
                         // we're actually not interested in the result here
                         // if the async part failed, then we have to rely
@@ -168,7 +185,7 @@ class MinEventDelayHandler {
             }
         });
             
-        logger.info("triggerAsyncDelaying: asynch delaying of "+minEventDelaySecs+" triggered: "+triggered);
+        logSilencer.infoOrDebug("triggerAsyncDelaying", "triggerAsyncDelaying: asynch delaying of "+minEventDelaySecs+" triggered: "+triggered);
         if (triggered) {
             isDelaying = true;
         }

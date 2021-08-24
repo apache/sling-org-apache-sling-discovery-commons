@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 
 import org.apache.sling.commons.scheduler.Scheduler;
+import org.apache.sling.discovery.ClusterView;
 import org.apache.sling.discovery.DiscoveryService;
 import org.apache.sling.discovery.InstanceDescription;
 import org.apache.sling.discovery.TopologyEvent;
@@ -37,6 +38,8 @@ import org.apache.sling.discovery.commons.providers.BaseTopologyView;
 import org.apache.sling.discovery.commons.providers.EventHelper;
 import org.apache.sling.discovery.commons.providers.ViewStateManager;
 import org.apache.sling.discovery.commons.providers.spi.ClusterSyncService;
+import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
+import org.apache.sling.discovery.commons.providers.util.LogSilencer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,6 +139,8 @@ public class ViewStateManagerImpl implements ViewStateManager {
     private Map<TopologyEventListener,TopologyEvent.Type> lastEventMap = new HashMap<TopologyEventListener, TopologyEvent.Type>();
 
     private MinEventDelayHandler minEventDelayHandler;
+
+    private final LogSilencer logSilencer = new LogSilencer(logger);
 
     /**
      * Creates a new ViewStateManager which synchronizes each method with the given
@@ -410,7 +415,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
             throw new IllegalArgumentException("newView must not be null");
         }
         if (!newView.isCurrent()) {
-            logger.debug("handleNewView: newView is not current - calling handleChanging.");
+            logger.info("handleNewView: newView is not current - calling handleChanging, newView = " + newView);
             handleChanging();
             return;// false;
         }
@@ -456,14 +461,14 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 // verify if there is actually a change between previousView and newView
                 // if there isn't, then there is not much point in sending a CHANGING/CHANGED tuple
                 // at all
-                if (previousView!=null && previousView.equals(newView)) {
+                if (previousView!=null && (previousView.equals(newView) || equalsIgnoreSyncToken(newView))) {
                     // then nothing to send - the view has not changed, and we haven't
                     // sent the CHANGING event - so we should not do anything here
                     logger.debug("handleNewViewNonDelayed: we were not in changing state and new view matches old, so - ignoring");
                     return false;
                 }
                 if (previousView==null || !onlyDiffersInProperties(newView)) {
-                    logger.debug("handleNewViewNonDelayed: implicitly triggering a handleChanging as we were not in changing state");
+                    logger.info("handleNewViewNonDelayed: implicitly triggering a handleChanging as we were not in changing state, new view = " + newView);
                     handleChanging();
                     logger.debug("handleNewViewNonDelayed: implicitly triggering of a handleChanging done");
                 }
@@ -486,7 +491,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
             if (!isChanging && onlyDiffersInProperties(newView)) {
                 // well then send a properties changed event only
                 // and that one does not go via consistencyservice
-                logger.info("handleNewViewNonDelayed: properties changed to: "+newView);
+                logSilencer.infoOrDebug("handleNewViewNonDelayed-propsChanged", "handleNewViewNonDelayed: properties changed to: "+newView);
                 previousView.setNotCurrent();
                 enqueueForAll(eventListeners, EventHelper.newPropertiesChangedEvent(previousView, newView));
                 logger.trace("handleNewViewNonDelayed: setting previousView to {}", newView);
@@ -496,7 +501,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
             
             final boolean invokeClusterSyncService;
             if (consistencyService==null) {
-                logger.info("handleNewViewNonDelayed: no ClusterSyncService set - continuing directly.");
+                logSilencer.infoOrDebug("handleNewViewNonDelayed-noSyncService", "handleNewViewNonDelayed: no ClusterSyncService set - continuing directly.");
                 invokeClusterSyncService = false;
             } else {
                 // there used to be a distinction between:
@@ -511,7 +516,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 //
                 // which is a long way of saying: if the consistencyService is configured,
                 // then we always use it, hence:
-                logger.info("handleNewViewNonDelayed: ClusterSyncService set - invoking...");
+                logSilencer.infoOrDebug("handleNewViewNonDelayed-invokeSyncService", "handleNewViewNonDelayed: ClusterSyncService set - invoking...");
                 invokeClusterSyncService = true;
             }
                         
@@ -520,7 +525,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 // then:
                 // run the set consistencyService
                 final int lastModCnt = modCnt;
-                logger.info("handleNewViewNonDelayed: invoking waitForAsyncEvents, then clusterSyncService (modCnt={})", modCnt);
+                logSilencer.infoOrDebug("handleNewViewNonDelayed-invokeWaitAsync", "handleNewViewNonDelayed: invoking waitForAsyncEvents, then clusterSyncService");
                 asyncEventSender.enqueue(new AsyncEvent() {
                     
                     @Override
@@ -544,7 +549,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                                         lastModCnt, modCnt);
                                 return;
                             }
-                            logger.info("handleNewViewNonDelayed/waitForAsyncEvents.run: done, now invoking consistencyService (modCnt={})", modCnt);
+                            logSilencer.infoOrDebug("waitForAsyncEvents-asyncRun", "handleNewViewNonDelayed/waitForAsyncEvents.run: done, now invoking consistencyService");
                             consistencyService.sync(newView,
                                     new Runnable() {
                                 
@@ -558,7 +563,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                                                     lastModCnt, modCnt);
                                             return;
                                         }
-                                        logger.info("consistencyService.callback.run: invoking doHandleConsistent.");
+                                        logSilencer.infoOrDebug("consistencyService-callBackRun", "consistencyService.callback.run: invoking doHandleConsistent.");
                                         // else:
                                         doHandleConsistent(newView);
                                     } finally {
@@ -579,7 +584,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 // or using it is not applicable at this stage - so continue
                 // with sending the TOPOLOGY_CHANGED (or TOPOLOGY_INIT if there
                 // are any newly bound topology listeners) directly
-                logger.info("handleNewViewNonDelayed: not invoking consistencyService, considering consistent now");
+                logSilencer.infoOrDebug("handleNewViewNonDelayed-noSyncService-ignore", "handleNewViewNonDelayed: not invoking consistencyService, considering consistent now");
                 doHandleConsistent(newView);
             }
             logger.debug("handleNewViewNonDelayed: end");
@@ -588,6 +593,46 @@ public class ViewStateManagerImpl implements ViewStateManager {
             lock.unlock();
             logger.trace("handleNewViewNonDelayed: finally");
         }
+    }
+
+    protected boolean equalsIgnoreSyncToken(BaseTopologyView newView) {
+        if (previousView==null) {
+            return false;
+        }
+        if (newView==null) {
+            throw new IllegalArgumentException("newView must not be null");
+        }
+        final ClusterView cluster = newView.getLocalInstance().getClusterView();
+        if (cluster instanceof LocalClusterView) {
+            final LocalClusterView local = (LocalClusterView)cluster;
+            if (!local.hasPartiallyStartedInstances()) {
+                // then we should not ignore the syncToken I'm afraid
+                return previousView.equals(newView);
+            }
+        }
+        final Set<InstanceDescription> previousInstances = previousView.getInstances();
+        final Set<InstanceDescription> newInstances = newView.getInstances();
+        if (previousInstances.size() != newInstances.size()) {
+            return false;
+        }
+        for (Iterator<InstanceDescription> it = previousInstances.iterator(); it.hasNext();) {
+            InstanceDescription instanceDescription = (InstanceDescription) it
+                    .next();
+            boolean found = false;
+            for (Iterator<?> it2 = newInstances.iterator(); it2
+                    .hasNext();) {
+                InstanceDescription otherId = (InstanceDescription) it2
+                        .next();
+                if (instanceDescription.equals(otherId)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected boolean onlyDiffersInProperties(BaseTopologyView newView) {

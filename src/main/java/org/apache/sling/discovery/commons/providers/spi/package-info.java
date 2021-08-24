@@ -20,9 +20,9 @@
 /**
  * Provides an SPI for providers, used by discovery.commons.providers.impl
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
-@Version("1.0.0")
+@Version("1.1.0")
 package org.apache.sling.discovery.commons.providers.spi;
 
 import org.osgi.annotation.versioning.Version;

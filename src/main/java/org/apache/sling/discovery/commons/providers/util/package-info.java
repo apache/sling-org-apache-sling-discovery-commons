@@ -20,9 +20,9 @@
 /**
  * Provides some static helpers for providers of the Discovery API.
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
-@Version("1.0.0")
+@Version("1.1.0")
 package org.apache.sling.discovery.commons.providers.util;
 
 import org.osgi.annotation.versioning.Version;

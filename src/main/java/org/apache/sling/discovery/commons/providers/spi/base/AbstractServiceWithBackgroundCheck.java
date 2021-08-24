@@ -18,6 +18,7 @@
  */
 package org.apache.sling.discovery.commons.providers.spi.base;
 
+import org.apache.sling.discovery.commons.providers.util.LogSilencer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,6 +32,8 @@ public abstract class AbstractServiceWithBackgroundCheck {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     protected String slingId;
+
+    private final LogSilencer logSilencer = new LogSilencer(logger);
 
     /**
      * The BackgroundCheckRunnable implements the details of
@@ -83,9 +86,9 @@ public abstract class AbstractServiceWithBackgroundCheck {
                     if (timeoutMillis != -1 && 
                             (System.currentTimeMillis() > start + timeoutMillis)) {
                         if (callback == null) {
-                            logger.info("backgroundCheck.run: timeout hit (no callback to invoke)");
+                            logSilencer.infoOrDebug("backgroundCheck.run", "backgroundCheck.run: timeout hit (no callback to invoke)");
                         } else {
-                            logger.info("backgroundCheck.run: timeout hit, invoking callback.");
+                            logSilencer.infoOrDebug("backgroundCheck.run", "backgroundCheck.run: timeout hit, invoking callback.");
                             callback.run();
                         }
                         return;
@@ -131,7 +134,7 @@ public abstract class AbstractServiceWithBackgroundCheck {
 
         void cancel() {
             if (!done) {
-                logger.info("cancel: "+threadName);
+                logSilencer.infoOrDebug("cancel-" + threadName, "cancel: "+threadName);
             }
             cancelled = true;
         }
@@ -200,14 +203,15 @@ public abstract class AbstractServiceWithBackgroundCheck {
             // then we're not even going to start the background-thread
             // we're already done
             if (callback!=null) {
-                logger.info("backgroundCheck: already done, backgroundCheck successful, invoking callback");
+                logSilencer.infoOrDebug("backgroundCheck", "backgroundCheck: already done, backgroundCheck successful, invoking callback");
                 callback.run();
             } else {
-                logger.info("backgroundCheck: already done, backgroundCheck successful. no callback to invoke.");
+                logSilencer.infoOrDebug("backgroundCheck", "backgroundCheck: already done, backgroundCheck successful. no callback to invoke.");
             }
             return;
         }
-        logger.info("backgroundCheck: spawning background-thread for '"+threadName+"'");
+        logSilencer.infoOrDebug("backgroundCheck-" + threadName,
+                "backgroundCheck: spawning background-thread for '"+threadName+"'");
         backgroundCheckRunnable = new BackgroundCheckRunnable(callback, check, timeoutMillis, waitMillis, threadName);
         Thread th = new Thread(backgroundCheckRunnable);
         th.setName(threadName);

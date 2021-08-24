@@ -30,6 +30,8 @@ import org.apache.sling.discovery.ClusterView;
 import org.apache.sling.discovery.InstanceDescription;
 import org.apache.sling.discovery.commons.providers.BaseTopologyView;
 import org.apache.sling.discovery.commons.providers.spi.ClusterSyncService;
+import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
+import org.apache.sling.discovery.commons.providers.util.LogSilencer;
 import org.apache.sling.settings.SlingSettingsService;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Activate;
@@ -66,6 +68,8 @@ public class OakBacklogClusterSyncService extends AbstractServiceWithBackgroundC
     protected SlingSettingsService settingsService;
 
     private ClusterSyncHistory consistencyHistory = new ClusterSyncHistory();
+
+    private final LogSilencer logSilencer = new LogSilencer(logger);
 
     public static OakBacklogClusterSyncService testConstructorAndActivate(
             final DiscoveryLiteConfig commonsConfig,
@@ -132,20 +136,21 @@ public class OakBacklogClusterSyncService extends AbstractServiceWithBackgroundC
         cancelPreviousBackgroundCheck();
 
         // first do the wait-for-backlog part
-        logger.info("sync: doing wait-for-backlog part for view="+view.toShortString());
+        logSilencer.infoOrDebug("sync", "sync: doing wait-for-backlog part for view="+view.toShortString());
         waitWhileBacklog(view, callback);
     }
 
     private void waitWhileBacklog(final BaseTopologyView view, final Runnable runnable) {
         // start backgroundChecking until the backlogStatus
         // is NO_BACKLOG
-        startBackgroundCheck("OakBacklogClusterSyncService-backlog-waiting", new BackgroundCheck() {
+        startBackgroundCheck("OakBacklogClusterSyncService-backlog-waiting-" + view.getLocalClusterSyncTokenId(), new BackgroundCheck() {
 
             @Override
             public boolean check() {
                 try {
                     if (!idMapService.isInitialized()) {
-                        logger.info("waitWhileBacklog: could not initialize...");
+                        logSilencer.infoOrDebug("waitWhileBacklog-" + view.toShortString(),
+                                "waitWhileBacklog: could not initialize...");
                         consistencyHistory.addHistoryEntry(view, "could not initialize idMapService");
                         return false;
                     }
@@ -156,11 +161,13 @@ public class OakBacklogClusterSyncService extends AbstractServiceWithBackgroundC
                 }
                 BacklogStatus backlogStatus = getBacklogStatus(view);
                 if (backlogStatus == BacklogStatus.NO_BACKLOG) {
-                    logger.info("waitWhileBacklog: no backlog (anymore), done.");
+                    logSilencer.infoOrDebug("waitWhileBacklog-" + view.toShortString(),
+                            "waitWhileBacklog: no backlog (anymore), done.");
                     consistencyHistory.addHistoryEntry(view, "no backlog (anymore)");
                     return true;
                 } else {
-                    logger.info("waitWhileBacklog: backlogStatus still "+backlogStatus);
+                    logSilencer.infoOrDebug("waitWhileBacklog-" + view.toShortString(),
+                            "waitWhileBacklog: backlogStatus still "+backlogStatus);
                     // clear the cache to make sure to get the latest version in case something changed
                     idMapService.clearCache();
                     consistencyHistory.addHistoryEntry(view, "backlog status "+backlogStatus);
@@ -201,11 +208,16 @@ public class OakBacklogClusterSyncService extends AbstractServiceWithBackgroundC
 
             // 1) 'deactivating' must be empty
             if (deactivatingIds.length!=0) {
-                logger.info("getBacklogStatus: there are deactivating instances: "+Arrays.toString(deactivatingIds));
+                logSilencer.infoOrDebug("getBacklogStatus-hasBacklog-" + view.toShortString(),
+                        "getBacklogStatus: there are deactivating instances: "+Arrays.toString(deactivatingIds));
                 return BacklogStatus.HAS_BACKLOG;
             }
 
             ClusterView cluster = view.getLocalInstance().getClusterView();
+            LocalClusterView localCluster = null;
+            if (cluster instanceof LocalClusterView) {
+                localCluster = (LocalClusterView)cluster;
+            }
             Set<String> slingIds = new HashSet<>();
             for (InstanceDescription instance : cluster.getInstances()) {
                 slingIds.add(instance.getSlingId());
@@ -213,23 +225,31 @@ public class OakBacklogClusterSyncService extends AbstractServiceWithBackgroundC
 
             for(int i=0; i<activeIds.length; i++) {
                 int activeId = activeIds[i];
+                if (localCluster != null && localCluster.isPartiallyStarted(activeId)) {
+                    // ignore this one then
+                    continue;
+                }
                 String slingId = idMapService.toSlingId(activeId, resourceResolver);
                 // 2) all ids of the descriptor must have a mapping to slingIds
                 if (slingId == null) {
-                    logger.info("getBacklogStatus: no slingId found for active id: "+activeId);
+                    logSilencer.infoOrDebug("getBacklogStatus-undefined-" + view.toShortString(),
+                            "getBacklogStatus: no slingId found for active id: "+activeId);
                     return BacklogStatus.UNDEFINED;
                 }
                 // 3) all 'active' instances must be in the view
                 if (!slingIds.contains(slingId)) {
-                    logger.info("getBacklogStatus: active instance's ("+activeId+") slingId ("+slingId+") not found in cluster ("+cluster+")");
+                    logSilencer.infoOrDebug("getBacklogStatus-hasBacklog-" + view.toShortString(),
+                            "getBacklogStatus: active instance's ("+activeId+") slingId ("+slingId+") not found in cluster ("+cluster+")");
                     return BacklogStatus.HAS_BACKLOG;
                 }
             }
 
-            logger.info("getBacklogStatus: no backlog (anymore)");
+            logSilencer.infoOrDebug("getBacklogStatus-" + view.toShortString(),
+                    "getBacklogStatus: no backlog (anymore)");
             return BacklogStatus.NO_BACKLOG;
         } catch(Exception e) {
-            logger.info("getBacklogStatus: failed to determine backlog status: "+e);
+            logSilencer.infoOrDebug("getBacklogStatus-undefined-" + view.toShortString(),
+                    "getBacklogStatus: failed to determine backlog status: "+e);
             return BacklogStatus.UNDEFINED;
         } finally {
             logger.trace("getBacklogStatus: end");

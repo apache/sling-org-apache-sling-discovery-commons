@@ -18,11 +18,16 @@
  */
 package org.apache.sling.discovery.commons.providers.spi;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.apache.sling.discovery.commons.providers.DefaultClusterView;
 
 public class LocalClusterView extends DefaultClusterView {
 
     private final String localClusterSyncTokenId;
+    private Set<Integer> partiallyStartedClusterNodeIds;
 
     public LocalClusterView(String id, String localClusterSyncTokenId) {
         super(id);
@@ -33,4 +38,21 @@ public class LocalClusterView extends DefaultClusterView {
         return localClusterSyncTokenId;
     }
 
+    public void setPartiallyStartedClusterNodeIds(Collection<Integer> clusterNodeIds) {
+        this.partiallyStartedClusterNodeIds = new HashSet<Integer>(clusterNodeIds);
+    }
+
+    public boolean isPartiallyStarted(Integer clusterNodeId) {
+        if (partiallyStartedClusterNodeIds == null || clusterNodeId == null) {
+            return false;
+        }
+        return partiallyStartedClusterNodeIds.contains(clusterNodeId);
+    }
+
+    public boolean hasPartiallyStartedInstances() {
+        if (partiallyStartedClusterNodeIds == null) {
+            return false;
+        }
+        return !partiallyStartedClusterNodeIds.isEmpty();
+    }
 }
