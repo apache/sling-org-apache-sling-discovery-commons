@@ -415,7 +415,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
             throw new IllegalArgumentException("newView must not be null");
         }
         if (!newView.isCurrent()) {
-            logger.info("handleNewView: newView is not current - calling handleChanging, newView = " + newView);
+            logger.debug("handleNewView: newView is not current - calling handleChanging.");
             handleChanging();
             return;// false;
         }
