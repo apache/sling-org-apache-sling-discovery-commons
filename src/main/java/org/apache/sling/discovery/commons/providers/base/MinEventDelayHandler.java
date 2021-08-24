@@ -126,7 +126,6 @@ class MinEventDelayHandler {
             // even though there is the very unlikely possibility that the async-delay-thread
             // would compete - but even if it would, thanks to the lock.lock() that would be safe.
             // so: we're going to do a handleChanging here:
-            logger.info("handlesNewView: triggered async delaying, so now calling handleChanging..., new view = " + newView);
             viewStateManager.handleChanging();
         }
         return true;
