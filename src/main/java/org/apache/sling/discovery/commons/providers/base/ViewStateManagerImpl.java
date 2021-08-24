@@ -468,7 +468,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                     return false;
                 }
                 if (previousView==null || !onlyDiffersInProperties(newView)) {
-                    logger.info("handleNewViewNonDelayed: implicitly triggering a handleChanging as we were not in changing state, new view = " + newView);
+                    logger.debug("handleNewViewNonDelayed: implicitly triggering a handleChanging as we were not in changing state");
                     handleChanging();
                     logger.debug("handleNewViewNonDelayed: implicitly triggering of a handleChanging done");
                 }
