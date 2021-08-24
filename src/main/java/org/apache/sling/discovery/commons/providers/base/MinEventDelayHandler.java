@@ -95,8 +95,8 @@ class MinEventDelayHandler {
         }
 
         if (viewStateManager.equalsIgnoreSyncToken(newView)) {
-            logSilencer.infoOrDebug("handlesNewView-" + newView.getLocalClusterSyncTokenId(),
-                    "handlesNewView: equalsIgnoreSyncToken, hence no delaying applicable");
+            // this is a frequent case, hence only log.debug
+            logger.debug("handlesNewView: equalsIgnoreSyncToken, hence no delaying applicable");
             return false;
         }
         
