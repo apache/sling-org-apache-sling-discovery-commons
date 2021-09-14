@@ -77,7 +77,8 @@ class MinEventDelayHandler {
      * Asks the MinEventDelayHandler to handle the new view
      * and return true if the caller shouldn't worry about any follow-up action -
      * only if the method returns false should the caller do the usual 
-     * handleNewView action
+     * handleNewView action.
+     * This caller of this method must ensure to be in a lock.lock() block
      */
     boolean handlesNewView(BaseTopologyView newView) {
         if (isDelaying) {

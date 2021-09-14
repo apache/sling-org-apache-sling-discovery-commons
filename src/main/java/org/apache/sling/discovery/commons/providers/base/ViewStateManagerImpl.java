@@ -595,6 +595,9 @@ public class ViewStateManagerImpl implements ViewStateManager {
         }
     }
 
+    /**
+     * This caller of this method must ensure to be in a lock.lock() block
+     */
     protected boolean equalsIgnoreSyncToken(BaseTopologyView newView) {
         if (previousView==null) {
             return false;
