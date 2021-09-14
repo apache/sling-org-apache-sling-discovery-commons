@@ -30,6 +30,7 @@ import java.util.UUID;
 import org.apache.sling.discovery.ClusterView;
 import org.apache.sling.discovery.InstanceDescription;
 import org.apache.sling.discovery.InstanceFilter;
+import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
 
 public class DummyTopologyView extends BaseTopologyView {
 
@@ -199,7 +200,15 @@ public class DummyTopologyView extends BaseTopologyView {
             String clusterId = id.getClusterView().getId();
             DefaultClusterView cluster = clusters.get(clusterId);
             if (cluster==null) {
-                cluster = new DefaultClusterView(clusterId);
+                final ClusterView origCluster = id.getClusterView();
+                if (origCluster instanceof LocalClusterView) {
+                    final LocalClusterView localOrigCluster = (LocalClusterView) origCluster;
+                    final LocalClusterView clonedCluster = new LocalClusterView(origCluster.getId(), localOrigCluster.getLocalClusterSyncTokenId());
+                    clonedCluster.setPartiallyStartedClusterNodeIds(localOrigCluster.getPartiallyStartedClusterNodeIds());
+                    cluster = clonedCluster;
+                } else {
+                    cluster = new DefaultClusterView(clusterId);
+                }
                 clusters.put(clusterId, cluster);
             }
             DefaultInstanceDescription clone = clone(cluster, id);

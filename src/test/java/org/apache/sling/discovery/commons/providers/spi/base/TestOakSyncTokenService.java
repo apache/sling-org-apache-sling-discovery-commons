@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,11 +37,11 @@ import org.apache.sling.discovery.commons.providers.ViewStateManager;
 import org.apache.sling.discovery.commons.providers.base.DummyListener;
 import org.apache.sling.discovery.commons.providers.base.TestHelper;
 import org.apache.sling.discovery.commons.providers.base.ViewStateManagerFactory;
+import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
 import org.apache.sling.discovery.commons.providers.spi.base.AbstractServiceWithBackgroundCheck.BackgroundCheckRunnable;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,5 +223,86 @@ public class TestOakSyncTokenService {
         field.setAccessible(true);
         Object backgroundCheckRunnable = field.get(idMapService);
         return (BackgroundCheckRunnable) backgroundCheckRunnable;
+    }
+
+    @Test
+    public void testPartiallyStartedInstance() throws Exception {
+        logger.info("testPartiallyStartedInstance: start");
+        OakBacklogClusterSyncService cs = OakBacklogClusterSyncService.testConstructorAndActivate(new SimpleCommonsConfig(), idMapService1, new DummySlingSettingsService(slingId1), factory1);
+        Lock lock = new ReentrantLock();
+        ViewStateManager vsm = ViewStateManagerFactory.newViewStateManager(lock, cs);
+        DummyListener l = new DummyListener();
+        vsm.bind(l);
+        vsm.handleActivated();
+
+        final DummyTopologyView view1 = TestHelper.newView(true, slingId1, slingId1, slingId1);
+        {
+            // simulate a view with just itself (slingId1 / 1)
+            vsm.handleNewView(view1);
+            cs.triggerBackgroundCheck();
+            assertEquals(0, vsm.waitForAsyncEvents(1000));
+            assertEquals(0, l.countEvents());
+            DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().me(1).seq(1).activeIds(1).setFinal(true));
+            assertTrue(idMapService1.waitForInit(5000));
+            cs.triggerBackgroundCheck();
+            assertEquals(0, vsm.waitForAsyncEvents(1000));
+            assertEquals(1, l.countEvents());
+        }
+
+        assertTrue(idMapService1.waitForInit(5000));
+
+        {
+            // simulate a new instance coming up - first it will show up in oak leases/lite-view
+            DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().me(1).seq(2).activeIds(1, 2).setFinal(true));
+
+            // the view is still the same (only contains slingId1) - but it has the flag 'partial' set
+            final String syncToken2 = "s2";
+            final String clusterId = view1.getLocalInstance().getClusterView().getId();
+            final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2);
+            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2)
+                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(2));
+
+            vsm.handleNewView(view1Suppressed);
+            cs.triggerBackgroundCheck();
+            assertEquals(0, vsm.waitForAsyncEvents(1000));
+            assertEquals(1, l.countEvents());
+        }
+        final String slingId2 = UUID.randomUUID().toString();
+        {
+            // now define slingId for activeId == 2
+            IdMapService idMapService2 = IdMapService.testConstructor(
+                    new SimpleCommonsConfig(), new DummySlingSettingsService(slingId2), factory2);
+            DescriptorHelper.setDiscoveryLiteDescriptor(factory2, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(2).seq(2).activeIds(1, 2));
+            assertTrue(idMapService2.waitForInit(5000));
+        }
+        {
+            // now that shouldn't have triggered anything yet towards the listeners
+            final String syncToken2 = "s2";
+            final String clusterId = view1.getLocalInstance().getClusterView().getId();
+            final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2);
+            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2)
+                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(2));
+
+            vsm.handleNewView(view1Suppressed);
+            cs.triggerBackgroundCheck();
+            assertEquals(0, vsm.waitForAsyncEvents(1000));
+            assertEquals(1, l.countEvents());
+        }
+        {
+            // now let's finish slingId2 startup - only this should trigger CHANGING/CHANGED
+            final String syncToken2 = "s2";
+            final String clusterId = view1.getLocalInstance().getClusterView().getId();
+            final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2);
+            final DummyTopologyView view2 = new DummyTopologyView(syncToken2)
+                    .addInstance(slingId1, cluster1Suppressed, true, true)
+                    .addInstance(slingId2, cluster1Suppressed, false, false);
+            vsm.handleNewView(view2);
+            cs.triggerBackgroundCheck();
+            assertEquals(0, vsm.waitForAsyncEvents(1000));
+            assertEquals(3, l.countEvents());
+        }
+        logger.info("testPartiallyStartedInstance: end");
     }
 }

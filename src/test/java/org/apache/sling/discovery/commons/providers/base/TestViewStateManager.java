@@ -21,12 +21,15 @@ package org.apache.sling.discovery.commons.providers.base;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -43,6 +46,7 @@ import org.apache.sling.discovery.commons.providers.DefaultInstanceDescription;
 import org.apache.sling.discovery.commons.providers.DummyTopologyView;
 import org.apache.sling.discovery.commons.providers.EventHelper;
 import org.apache.sling.discovery.commons.providers.spi.ClusterSyncService;
+import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -716,4 +720,173 @@ public class TestViewStateManager {
         assertFalse(mgr.onlyDiffersInProperties(view6));
     }
 
+    @Test
+    public void testSuppression_withDelay() throws Exception {
+        doTestSuppression(true);
+    }
+
+    @Test
+    public void testSuppression_withoutDelay() throws Exception {
+        doTestSuppression(false);
+    }
+
+    private void doTestSuppression(boolean minEventDelayHelepr) throws Exception {
+        logger.info("testSuppression: start");
+
+        final AtomicReference<TopologyView> topologyRef = new AtomicReference<>();
+        if (minEventDelayHelepr) {
+            mgr.installMinEventDelayHandler(new DiscoveryService() {
+
+                @Override
+                public TopologyView getTopology() {
+                    return topologyRef.get();
+                }
+            }, new DummyScheduler(), 1);
+        }
+
+        final String slingId1 = UUID.randomUUID().toString();
+        final String slingId2 = UUID.randomUUID().toString();
+        final String clusterId = UUID.randomUUID().toString();
+        final String syncToken1 = "s1";
+        final LocalClusterView cluster1 = new LocalClusterView(clusterId, syncToken1);
+        final DummyTopologyView view1 = new DummyTopologyView(syncToken1)
+                .addInstance(slingId1, cluster1, true, true);
+        final String syncToken4 = "s4";
+        final LocalClusterView cluster4 = new LocalClusterView(clusterId, syncToken4);
+        final DummyTopologyView view4 = new DummyTopologyView(syncToken4)
+                .addInstance(slingId1, cluster4, true, true)
+                .addInstance(slingId2, cluster4, false, false);
+
+        final DummyListener listener = new DummyListener();
+        mgr.bind(listener);
+        TestHelper.assertNoEvents(listener);
+        mgr.handleActivated();
+        TestHelper.assertNoEvents(listener);
+
+        logger.info("testSuppression: handleNewView(view1)");
+        mgr.handleNewView(view1);
+        topologyRef.set(view1);
+        assertEquals(0, mgr.waitForAsyncEvents(5000));
+        TopologyEvent initEvent = EventHelper.newInitEvent(view1);
+        assertEvents(listener, initEvent);
+
+        // for a view change to "go undetected" ie not trigger any topology change,
+        // the list of instances must remain the same
+        // (but the syncToken can differ and it can have suppressed clusterNodeIds)
+        for(int i = 0; i < 100; i++) {
+            final String syncToken2SameAsS1 = "s1";
+            final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2SameAsS1);
+            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2SameAsS1)
+                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(1));
+            logger.info("testSuppression: handleNewView(view2[a])");
+            mgr.handleNewView(view1Suppressed);
+            topologyRef.set(view1Suppressed);
+            assertEquals(0, mgr.waitForAsyncEvents(5000));
+            TestHelper.assertNoEvents(listener);
+        }
+        for(int i = 0; i < 100; i++) {
+            final String syncToken2Different = "s1Suppressed";
+            final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2Different);
+            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2Different)
+                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(1));
+            logger.info("testSuppression: handleNewView(view2[b])");
+            mgr.handleNewView(view1Suppressed);
+            topologyRef.set(view1Suppressed);
+            assertEquals(0, mgr.waitForAsyncEvents(5000));
+            TestHelper.assertNoEvents(listener);
+        }
+
+        logger.info("testSuppression: handleNewView(view4)");
+        mgr.handleNewView(view4);
+        topologyRef.set(view4);
+        assertEquals(0, mgr.waitForAsyncEvents(5000));
+        assertEvents(listener, EventHelper.newChangingEvent(view1), EventHelper.newChangedEvent(view1, view4));
+    }
+
+    @Test
+    public void testEqualsIgnoreSyncToken() throws Exception {
+        // no previous view, so returns false
+        assertFalse(mgr.equalsIgnoreSyncToken(null));
+
+        final String clusterId = UUID.randomUUID().toString();
+        final String syncToken1 = "s1";
+        final DummyTopologyView view1 = createTopology(clusterId, syncToken1, 1);
+        assertTrue(mgr.handleNewViewNonDelayed(view1));
+        try {
+            mgr.equalsIgnoreSyncToken(null);
+            fail("should have thrown a NPE");
+        } catch(RuntimeException e) {
+            // ok
+        }
+        assertTrue(mgr.equalsIgnoreSyncToken(view1));
+
+        DummyTopologyView view;
+        for(int i = 1; i < 10; i++) {
+            // same instances, same syncToken, no partiallyStartedInstances => true
+            view = createTopology(view1, syncToken1, 0);
+            assertTrue(mgr.equalsIgnoreSyncToken(view));
+            // same instances, same syncToken, with partiallyStartedInstances => true
+            addPartiallyStartedInstance(view, 1);
+            assertTrue(mgr.equalsIgnoreSyncToken(view));
+
+            // different instances, same syncToken, no partiallyStartedInstances => false
+            view = createTopology(view1, syncToken1, i);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+            // different instances, same syncToken, with partiallyStartedInstances => false
+            addPartiallyStartedInstance(view, 1);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+
+            // same instances, different syncToken, no partiallyStartedInstances => false
+            final String differentSyncToken = "s2";
+            view = createTopology(view1, differentSyncToken, 0);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+            // same instances, different syncToken, with partiallyStartedInstances => true
+            view = createTopology(view1, differentSyncToken, 0);
+            addPartiallyStartedInstance(view, 1);
+            assertTrue(mgr.equalsIgnoreSyncToken(view));
+
+            // different instances, different syncToken, no partiallyStartedInstances => false
+            view = createTopology(view1, differentSyncToken, i);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+            // different instances, different syncToken, with partiallyStartedInstances => false
+            view = createTopology(view1, differentSyncToken, i);
+            addPartiallyStartedInstance(view, 1);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+        }
+    }
+
+    private void addPartiallyStartedInstance(TopologyView view, Integer... clusterNodeIds) {
+        LocalClusterView local = (LocalClusterView) view.getLocalInstance().getClusterView();
+        local.setPartiallyStartedClusterNodeIds(Arrays.asList(clusterNodeIds));
+    }
+
+    private DummyTopologyView createTopology(String clusterId, String syncToken, int numInstances) {
+        final LocalClusterView cluster = new LocalClusterView(clusterId, syncToken);
+        final DummyTopologyView view = new DummyTopologyView(syncToken);
+        for(int i = 0; i < numInstances; i++) {
+            view.addInstance(UUID.randomUUID().toString(), cluster, i == 0, i == 0);
+        }
+        return view;
+    }
+
+    private DummyTopologyView createTopology(DummyTopologyView base, String syncToken,
+            int numAdditionalInstances) {
+        return createTopology(base.getLocalInstance().getClusterView(), syncToken,
+                numAdditionalInstances);
+    }
+
+    private DummyTopologyView createTopology(ClusterView baseCluster, String syncToken,
+            int numAdditionalInstances) {
+        final LocalClusterView cluster = new LocalClusterView(baseCluster.getId(), syncToken);
+        final DummyTopologyView view2 = new DummyTopologyView(syncToken);
+        for (InstanceDescription inst : baseCluster.getInstances()) {
+            view2.addInstance(inst.getSlingId(), cluster, inst.isLeader(), inst.isLocal());
+        }
+        for (int i = 0; i < numAdditionalInstances; i++) {
+            view2.addInstance(UUID.randomUUID().toString(), cluster, false, false);
+        }
+        return view2;
+    }
 }
