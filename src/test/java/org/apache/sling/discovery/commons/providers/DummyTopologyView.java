@@ -203,7 +203,9 @@ public class DummyTopologyView extends BaseTopologyView {
                 final ClusterView origCluster = id.getClusterView();
                 if (origCluster instanceof LocalClusterView) {
                     final LocalClusterView localOrigCluster = (LocalClusterView) origCluster;
-                    cluster = new LocalClusterView(origCluster.getId(), localOrigCluster.getLocalClusterSyncTokenId());
+                    final LocalClusterView clonedCluster = new LocalClusterView(origCluster.getId(), localOrigCluster.getLocalClusterSyncTokenId());
+                    clonedCluster.setPartiallyStartedClusterNodeIds(localOrigCluster.getPartiallyStartedClusterNodeIds());
+                    cluster = clonedCluster;
                 } else {
                     cluster = new DefaultClusterView(clusterId);
                 }

@@ -19,6 +19,7 @@
 package org.apache.sling.discovery.commons.providers.spi;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,6 +37,10 @@ public class LocalClusterView extends DefaultClusterView {
     
     public String getLocalClusterSyncTokenId() {
         return localClusterSyncTokenId;
+    }
+
+    public Set<Integer> getPartiallyStartedClusterNodeIds() {
+        return Collections.unmodifiableSet(partiallyStartedClusterNodeIds);
     }
 
     public void setPartiallyStartedClusterNodeIds(Collection<Integer> clusterNodeIds) {
