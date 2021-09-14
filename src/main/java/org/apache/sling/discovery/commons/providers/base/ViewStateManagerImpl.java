@@ -596,6 +596,9 @@ public class ViewStateManagerImpl implements ViewStateManager {
     }
 
     /**
+     * Checks if the previouesView is equal to the newView, ignoring the
+     * syncToken (but only if the newView has partially started instances).
+     * <p/>
      * This caller of this method must ensure to be in a lock.lock() block
      */
     protected boolean equalsIgnoreSyncToken(BaseTopologyView newView) {
@@ -613,29 +616,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 return previousView.equals(newView);
             }
         }
-        final Set<InstanceDescription> previousInstances = previousView.getInstances();
-        final Set<InstanceDescription> newInstances = newView.getInstances();
-        if (previousInstances.size() != newInstances.size()) {
-            return false;
-        }
-        for (Iterator<InstanceDescription> it = previousInstances.iterator(); it.hasNext();) {
-            InstanceDescription instanceDescription = (InstanceDescription) it
-                    .next();
-            boolean found = false;
-            for (Iterator<?> it2 = newInstances.iterator(); it2
-                    .hasNext();) {
-                InstanceDescription otherId = (InstanceDescription) it2
-                        .next();
-                if (instanceDescription.equals(otherId)) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                return false;
-            }
-        }
-        return true;
+        return previousView.getInstances().equals(newView.getInstances());
     }
 
     protected boolean onlyDiffersInProperties(BaseTopologyView newView) {

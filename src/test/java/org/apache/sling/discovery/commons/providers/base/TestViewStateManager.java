@@ -21,6 +21,7 @@ package org.apache.sling.discovery.commons.providers.base;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -804,4 +805,88 @@ public class TestViewStateManager {
         assertEvents(listener, EventHelper.newChangingEvent(view1), EventHelper.newChangedEvent(view1, view4));
     }
 
+    @Test
+    public void testEqualsIgnoreSyncToken() throws Exception {
+        // no previous view, so returns false
+        assertFalse(mgr.equalsIgnoreSyncToken(null));
+
+        final String clusterId = UUID.randomUUID().toString();
+        final String syncToken1 = "s1";
+        final DummyTopologyView view1 = createTopology(clusterId, syncToken1, 1);
+        assertTrue(mgr.handleNewViewNonDelayed(view1));
+        try {
+            mgr.equalsIgnoreSyncToken(null);
+            fail("should have thrown a NPE");
+        } catch(RuntimeException e) {
+            // ok
+        }
+        assertTrue(mgr.equalsIgnoreSyncToken(view1));
+
+        DummyTopologyView view;
+        for(int i = 1; i < 10; i++) {
+            // same instances, same syncToken, no partiallyStartedInstances => true
+            view = createTopology(view1, syncToken1, 0);
+            assertTrue(mgr.equalsIgnoreSyncToken(view));
+            // same instances, same syncToken, with partiallyStartedInstances => true
+            addPartiallyStartedInstance(view, 1);
+            assertTrue(mgr.equalsIgnoreSyncToken(view));
+
+            // different instances, same syncToken, no partiallyStartedInstances => false
+            view = createTopology(view1, syncToken1, i);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+            // different instances, same syncToken, with partiallyStartedInstances => false
+            addPartiallyStartedInstance(view, 1);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+
+            // same instances, different syncToken, no partiallyStartedInstances => false
+            final String differentSyncToken = "s2";
+            view = createTopology(view1, differentSyncToken, 0);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+            // same instances, different syncToken, with partiallyStartedInstances => true
+            view = createTopology(view1, differentSyncToken, 0);
+            addPartiallyStartedInstance(view, 1);
+            assertTrue(mgr.equalsIgnoreSyncToken(view));
+
+            // different instances, different syncToken, no partiallyStartedInstances => false
+            view = createTopology(view1, differentSyncToken, i);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+            // different instances, different syncToken, with partiallyStartedInstances => false
+            view = createTopology(view1, differentSyncToken, i);
+            addPartiallyStartedInstance(view, 1);
+            assertFalse(mgr.equalsIgnoreSyncToken(view));
+        }
+    }
+
+    private void addPartiallyStartedInstance(TopologyView view, Integer... clusterNodeIds) {
+        LocalClusterView local = (LocalClusterView) view.getLocalInstance().getClusterView();
+        local.setPartiallyStartedClusterNodeIds(Arrays.asList(clusterNodeIds));
+    }
+
+    private DummyTopologyView createTopology(String clusterId, String syncToken, int numInstances) {
+        final LocalClusterView cluster = new LocalClusterView(clusterId, syncToken);
+        final DummyTopologyView view = new DummyTopologyView(syncToken);
+        for(int i = 0; i < numInstances; i++) {
+            view.addInstance(UUID.randomUUID().toString(), cluster, i == 0, i == 0);
+        }
+        return view;
+    }
+
+    private DummyTopologyView createTopology(DummyTopologyView base, String syncToken,
+            int numAdditionalInstances) {
+        return createTopology(base.getLocalInstance().getClusterView(), syncToken,
+                numAdditionalInstances);
+    }
+
+    private DummyTopologyView createTopology(ClusterView baseCluster, String syncToken,
+            int numAdditionalInstances) {
+        final LocalClusterView cluster = new LocalClusterView(baseCluster.getId(), syncToken);
+        final DummyTopologyView view2 = new DummyTopologyView(syncToken);
+        for (InstanceDescription inst : baseCluster.getInstances()) {
+            view2.addInstance(inst.getSlingId(), cluster, inst.isLeader(), inst.isLocal());
+        }
+        for (int i = 0; i < numAdditionalInstances; i++) {
+            view2.addInstance(UUID.randomUUID().toString(), cluster, false, false);
+        }
+        return view2;
+    }
 }
