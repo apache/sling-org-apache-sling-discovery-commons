@@ -73,7 +73,7 @@ public class LogSilencer {
             }
         }
         if (doLogInfo) {
-            logger.info(msg + " (future identical logs go to debug)");
+            logger.info("{} {}", msg, "(future identical logs go to debug)");
         } else {
             logger.debug(msg);
         }
