@@ -42,10 +42,10 @@ public class LogSilencer {
 
     private long autoResetTime = 0;
 
-    public LogSilencer(Logger logger, long autoResetDelaySeconds) {
+    public LogSilencer(Logger logger, long autoResetDelayMinutes) {
         this.logger = logger;
-        if (autoResetDelaySeconds > 0) {
-            autoResetDelayMillis = TimeUnit.MINUTES.toMillis(autoResetDelaySeconds);
+        if (autoResetDelayMinutes > 0) {
+            autoResetDelayMillis = TimeUnit.MINUTES.toMillis(autoResetDelayMinutes);
         } else {
             autoResetDelayMillis = 0;
         }
