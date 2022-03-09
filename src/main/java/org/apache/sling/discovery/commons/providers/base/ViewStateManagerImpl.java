@@ -598,7 +598,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
     /**
      * Checks if the previouesView is equal to the newView, ignoring the
      * syncToken (but only if the newView has partially started instances).
-     * <p/>
+     * <p>
      * This caller of this method must ensure to be in a lock.lock() block
      */
     protected boolean equalsIgnoreSyncToken(BaseTopologyView newView) {
