@@ -1,1 +1,0 @@
-Import-Package: javax.jcr;resolution:=optional, !java.util.*, !java.io.*, !java.lang, !java.text, *
