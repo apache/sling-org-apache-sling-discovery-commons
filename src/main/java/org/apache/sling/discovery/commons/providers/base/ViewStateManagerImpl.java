@@ -42,6 +42,7 @@ import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
 import org.apache.sling.discovery.commons.providers.util.LogSilencer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The ViewStateManager is at the core of managing TopologyEventListeners,
@@ -141,6 +142,9 @@ public class ViewStateManagerImpl implements ViewStateManager {
     private MinEventDelayHandler minEventDelayHandler;
 
     private final LogSilencer logSilencer = new LogSilencer(logger);
+
+    @Reference
+    protected volatile TopologyReadinessHandler topologyReadinessHandler;
 
     /**
      * Creates a new ViewStateManager which synchronizes each method with the given
@@ -446,7 +450,20 @@ public class ViewStateManagerImpl implements ViewStateManager {
         handleNewViewNonDelayed(newView);
     }
 
-    boolean handleNewViewNonDelayed(final BaseTopologyView newView) {
+    protected boolean handleNewViewNonDelayed(final BaseTopologyView newView) {
+        // Check if topology changes should be delayed
+        if (topologyReadinessHandler != null && topologyReadinessHandler.shouldTriggerTopologyChanging()) {
+            if (previousView != null) {
+                if (previousView.isCurrent()) {
+                    logger.info("handleNewViewNonDelayed: would trigger TOPOLOGY_CHANGING for current view");
+                }
+                previousView.setNotCurrent();
+            }
+            return true;
+        }
+
+        handleChanging();
+
         logger.trace("handleNewViewNonDelayed: start");
         lock.lock();
         try{
@@ -484,7 +501,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 
                 // other than that, we can't currently send any event, before activate
                 logger.debug("handleNewViewNonDelayed: not yet activated - ignoring");
-                return true;
+                return false;
             }
             
             // now check if the view indeed changed or if it was just the properties
@@ -496,7 +513,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 enqueueForAll(eventListeners, EventHelper.newPropertiesChangedEvent(previousView, newView));
                 logger.trace("handleNewViewNonDelayed: setting previousView to {}", newView);
                 previousView = newView;
-                return true;
+                return false;
             }
             
             final boolean invokeClusterSyncService;
@@ -588,7 +605,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 doHandleConsistent(newView);
             }
             logger.debug("handleNewViewNonDelayed: end");
-            return true;
+            return false;
         } finally {
             lock.unlock();
             logger.trace("handleNewViewNonDelayed: finally");
