@@ -22,7 +22,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.felix.hc.api.condition.SystemReady;
 import org.apache.log4j.Level;
 import org.apache.log4j.spi.RootLogger;
 import org.apache.sling.discovery.ClusterView;
@@ -50,6 +54,8 @@ import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -855,6 +861,35 @@ public class TestViewStateManager {
             addPartiallyStartedInstance(view, 1);
             assertFalse(mgr.equalsIgnoreSyncToken(view));
         }
+    }
+
+    @Test
+    public void testTopologyReadinessHandler() throws Exception {
+        // Mock the TopologyReadinessHandler and SystemReady
+        TopologyReadinessHandler readinessHandler = mock(TopologyReadinessHandler.class);
+        SystemReady systemReady = mock(SystemReady.class);
+
+        // Bind the SystemReady instance to the readiness handler
+        readinessHandler.bindSystemReady(systemReady);
+
+        // Inject the mocked readiness handler into the ViewStateManager
+        Field field = ViewStateManagerImpl.class.getDeclaredField("topologyReadinessHandler");
+        field.setAccessible(true);
+        field.set(mgr, readinessHandler);
+
+        // Simulate the manager activation
+        mgr.handleActivated();
+
+        // Verify that the readiness handler is in a READY state
+        when(readinessHandler.shouldTriggerTopologyChanging()).thenReturn(true);
+        assertTrue("TopologyReadinessHandler should be in READY state", readinessHandler.shouldTriggerTopologyChanging());
+
+        // Simulate unbinding the SystemReady instance
+        readinessHandler.unbindSystemReady(systemReady);
+
+        // Verify that the readiness handler is no longer in a READY state
+        when(readinessHandler.shouldTriggerTopologyChanging()).thenReturn(false);
+        assertFalse("TopologyReadinessHandler should not be in READY state", readinessHandler.shouldTriggerTopologyChanging());
     }
 
     private void addPartiallyStartedInstance(TopologyView view, Integer... clusterNodeIds) {

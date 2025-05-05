@@ -461,9 +461,6 @@ public class ViewStateManagerImpl implements ViewStateManager {
             }
             return true;
         }
-
-        handleChanging();
-
         logger.trace("handleNewViewNonDelayed: start");
         lock.lock();
         try{
