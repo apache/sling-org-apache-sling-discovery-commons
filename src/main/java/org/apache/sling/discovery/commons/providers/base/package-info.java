@@ -20,9 +20,9 @@
 /**
  * Provides commons implementations for providers of the Discovery API.
  *
- * @version 1.1.0
+ * @version 1.2.0
  */
-@Version("1.1.0")
+@org.osgi.annotation.versioning.Version("1.2.0")
 package org.apache.sling.discovery.commons.providers.base;
 
 import org.osgi.annotation.versioning.Version;
