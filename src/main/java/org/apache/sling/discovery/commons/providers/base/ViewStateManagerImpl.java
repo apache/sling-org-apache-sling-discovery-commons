@@ -501,7 +501,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 
                 // other than that, we can't currently send any event, before activate
                 logger.debug("handleNewViewNonDelayed: not yet activated - ignoring");
-                return false;
+                return true;
             }
             
             // now check if the view indeed changed or if it was just the properties
@@ -513,7 +513,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 enqueueForAll(eventListeners, EventHelper.newPropertiesChangedEvent(previousView, newView));
                 logger.trace("handleNewViewNonDelayed: setting previousView to {}", newView);
                 previousView = newView;
-                return false;
+                return true;
             }
             
             final boolean invokeClusterSyncService;
@@ -605,7 +605,7 @@ public class ViewStateManagerImpl implements ViewStateManager {
                 doHandleConsistent(newView);
             }
             logger.debug("handleNewViewNonDelayed: end");
-            return false;
+            return true;
         } finally {
             lock.unlock();
             logger.trace("handleNewViewNonDelayed: finally");
