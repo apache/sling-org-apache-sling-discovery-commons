@@ -43,7 +43,6 @@ import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.testing.mock.osgi.MockOsgi;
 import org.apache.sling.testing.mock.sling.NodeTypeMode;
 import org.apache.sling.testing.mock.sling.oak.OakMockResourceResolverAdapter;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;
@@ -96,15 +95,6 @@ public class TestOakSyncTokenService {
         slingId1 = UUID.randomUUID().toString();
         idMapService1 = IdMapService.testConstructor(new SimpleCommonsConfig(), new DummySlingSettingsService(slingId1), factory1);
         logger.info("setup: end");
-    }
-    
-    @After
-    public void tearDown() throws Exception {
-        logger.info("teardown: start");
-        if (idMapService1 != null) {
-            idMapService1.deactivate();
-        }
-        logger.info("teardown: end");
     }
     
     @Test
