@@ -28,15 +28,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
-import org.apache.sling.commons.testing.junit.categories.Slow;
 import org.apache.sling.discovery.TopologyEvent;
 import org.apache.sling.discovery.commons.providers.DefaultClusterView;
 import org.apache.sling.discovery.commons.providers.DummyTopologyView;
 import org.apache.sling.discovery.commons.providers.EventHelper;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
-@Category(Slow.class)
 public class TestSlowViewStateManager extends TestViewStateManager {
 
     /** does couple loops randomly calling handleChanging() (or not) and then handleNewView().
@@ -46,7 +43,6 @@ public class TestSlowViewStateManager extends TestViewStateManager {
         TestHelper.randomEventLoop(mgr, null, 100, -1, random, listeners);
     }
     
-    @Category(Slow.class) //TODO test takes env 10sec
     @Test
     public void testClusterSyncService_withConcurrency() throws Exception {
         final org.apache.log4j.Logger commonsLogger = LogManager.getRootLogger().getLogger("org.apache.sling.discovery.commons.providers");
