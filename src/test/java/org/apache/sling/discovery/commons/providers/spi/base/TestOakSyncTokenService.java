@@ -24,12 +24,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.discovery.commons.providers.DummyTopologyView;
 import org.apache.sling.discovery.commons.providers.SimpleCommonsConfig;
@@ -40,9 +40,12 @@ import org.apache.sling.discovery.commons.providers.base.ViewStateManagerFactory
 import org.apache.sling.discovery.commons.providers.spi.LocalClusterView;
 import org.apache.sling.discovery.commons.providers.spi.base.AbstractServiceWithBackgroundCheck.BackgroundCheckRunnable;
 import org.apache.sling.jcr.api.SlingRepository;
-import org.junit.After;
+import org.apache.sling.testing.mock.osgi.MockOsgi;
+import org.apache.sling.testing.mock.sling.NodeTypeMode;
+import org.apache.sling.testing.mock.sling.oak.OakMockResourceResolverAdapter;
 import org.junit.Before;
 import org.junit.Test;
+import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,39 +55,46 @@ public class TestOakSyncTokenService {
 
     ResourceResolverFactory factory1;
     ResourceResolverFactory factory2;
-    private SlingRepository repository1;
-    private SlingRepository repository2;
-    private MemoryNodeStore memoryNS;
     private IdMapService idMapService1;
     private String slingId1;
     
     @Before
     public void setup() throws Exception {
         logger.info("setup: start");
-        RepositoryTestHelper.resetRepo();
-        memoryNS = new MemoryNodeStore();
-        repository1 = RepositoryTestHelper.newOakRepository(memoryNS);
-        RepositoryTestHelper.initSlingNodeTypes(repository1);
-        repository2 = RepositoryTestHelper.newOakRepository(memoryNS);
-        factory1 = RepositoryTestHelper.mockResourceResolverFactory(repository1);
-        factory2 = RepositoryTestHelper.mockResourceResolverFactory(repository2);
+        
+        BundleContext bundleContext1 = MockOsgi.newBundleContext();
+        BundleContext bundleContext2 = MockOsgi.newBundleContext();
+        
+        // We need to create to ResourceResolverFactories that share the same repository. This is not supported
+        // with the current sling jcr mocks so ... we improvise
+        
+        // 1. create two SlingRepository instances and make sure that they share the same nodeStore
+        OakMockResourceResolverAdapter oakAdapter = new OakMockResourceResolverAdapter();
+        SlingRepository initialRepo = oakAdapter.newSlingRepository();
+        SlingRepository secondRepo = oakAdapter.newSlingRepository();
+        // use reflection to copy the nodeStore from initialRepo to secondRepo
+        Field field = initialRepo.getClass().getDeclaredField("nodeStore");
+        field.setAccessible(true);
+        Object nodeStore = field.get(initialRepo);
+        field = secondRepo.getClass().getDeclaredField("nodeStore");
+        field.setAccessible(true);
+        field.set(secondRepo, nodeStore);
+        
+
+        // 2. create the two ResourceResolverFactories from existing SlingRepository instances by using
+        // the internal ResourceResolverFactoryInitializer class
+        Class<?> initialiserClass = getClass().getClassLoader().loadClass("org.apache.sling.testing.mock.sling.ResourceResolverFactoryInitializer");
+        Method setupMethod = initialiserClass.getMethod("setUp", SlingRepository.class, BundleContext.class, NodeTypeMode.class);
+        setupMethod.setAccessible(true);
+        factory1 = (ResourceResolverFactory) setupMethod.invoke(null,
+                initialRepo, bundleContext1, NodeTypeMode.NODETYPES_REQUIRED);
+
+        factory2 = (ResourceResolverFactory) setupMethod.invoke(null,
+                secondRepo, bundleContext2, NodeTypeMode.NODETYPES_REQUIRED);
+        
         slingId1 = UUID.randomUUID().toString();
         idMapService1 = IdMapService.testConstructor(new SimpleCommonsConfig(), new DummySlingSettingsService(slingId1), factory1);
         logger.info("setup: end");
-    }
-    
-    @After
-    public void tearDown() throws Exception {
-        logger.info("teardown: start");
-        if (repository1!=null) {
-            RepositoryTestHelper.stopRepository(repository1);
-            repository1 = null;
-        }
-        if (repository2!=null) {
-            RepositoryTestHelper.stopRepository(repository2);
-            repository2 = null;
-        }
-        logger.info("teardown: end");
     }
     
     @Test

@@ -27,7 +27,8 @@ import javax.jcr.Repository;
 import javax.jcr.Session;
 
 import org.apache.jackrabbit.commons.SimpleValueFactory;
-import org.apache.jackrabbit.oak.util.GenericDescriptors;
+
+import org.apache.jackrabbit.oak.spi.descriptors.GenericDescriptors;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 

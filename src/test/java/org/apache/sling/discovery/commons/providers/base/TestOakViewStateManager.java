@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.jackrabbit.oak.plugins.memory.MemoryNodeStore;
 import org.apache.log4j.Level;
 import org.apache.log4j.spi.RootLogger;
 import org.apache.sling.api.resource.ResourceResolverFactory;
@@ -43,11 +42,11 @@ import org.apache.sling.discovery.commons.providers.spi.base.ClusterSyncServiceC
 import org.apache.sling.discovery.commons.providers.spi.base.DummyClusterSyncService;
 import org.apache.sling.discovery.commons.providers.spi.base.DummySlingSettingsService;
 import org.apache.sling.discovery.commons.providers.spi.base.IdMapService;
-import org.apache.sling.discovery.commons.providers.spi.base.RepositoryTestHelper;
-import org.apache.sling.jcr.api.SlingRepository;
+import org.apache.sling.testing.mock.sling.junit.SlingContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,15 +55,15 @@ public class TestOakViewStateManager implements DiscoveryService {
 
     protected static final Logger logger = LoggerFactory.getLogger(TestOakViewStateManager.class);
 
+    @Rule
+    public final SlingContext context1 = new SlingContext();
+    
+    @Rule
+    public final SlingContext context2 = new SlingContext();
+
     protected ViewStateManagerImpl mgr;
 
     private Level logLevel;
-
-    ResourceResolverFactory factory1;
-    ResourceResolverFactory factory2;
-    private SlingRepository repository1;
-    private SlingRepository repository2;
-    private MemoryNodeStore memoryNS;
 
     @SuppressWarnings("unused")
     private IdMapService idMapService1;
@@ -92,16 +91,10 @@ public class TestOakViewStateManager implements DiscoveryService {
         final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
         logLevel = discoveryLogger.getLevel();
         discoveryLogger.setLevel(Level.INFO);
-        RepositoryTestHelper.resetRepo();
-        memoryNS = new MemoryNodeStore();
-        repository1 = RepositoryTestHelper.newOakRepository(memoryNS);
-        RepositoryTestHelper.initSlingNodeTypes(repository1);
-        repository2 = RepositoryTestHelper.newOakRepository(memoryNS);
-        factory1 = RepositoryTestHelper.mockResourceResolverFactory(repository1);
-        factory2 = RepositoryTestHelper.mockResourceResolverFactory(repository2);
+        
         slingId1 = UUID.randomUUID().toString();
         idMapService1 = IdMapService.testConstructor(new SimpleCommonsConfig(), new DummySlingSettingsService(slingId1),
-                factory1);
+                context1.getService(ResourceResolverFactory.class));
         scheduler = new DummyScheduler();
         logger.info("setup: end");
     }
@@ -116,14 +109,6 @@ public class TestOakViewStateManager implements DiscoveryService {
         mgr = null;
         final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(logLevel);
-        if (repository1 != null) {
-            RepositoryTestHelper.stopRepository(repository1);
-            repository1 = null;
-        }
-        if (repository2 != null) {
-            RepositoryTestHelper.stopRepository(repository2);
-            repository2 = null;
-        }
         logger.info("teardown: end");
     }
 
