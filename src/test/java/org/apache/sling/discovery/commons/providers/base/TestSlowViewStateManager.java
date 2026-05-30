@@ -26,13 +26,14 @@ import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.apache.sling.discovery.TopologyEvent;
 import org.apache.sling.discovery.commons.providers.DefaultClusterView;
 import org.apache.sling.discovery.commons.providers.DummyTopologyView;
 import org.apache.sling.discovery.commons.providers.EventHelper;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
 
 public class TestSlowViewStateManager extends TestViewStateManager {
 
@@ -45,8 +46,7 @@ public class TestSlowViewStateManager extends TestViewStateManager {
     
     @Test
     public void testClusterSyncService_withConcurrency() throws Exception {
-        final org.apache.log4j.Logger commonsLogger = LogManager.getRootLogger().getLogger("org.apache.sling.discovery.commons.providers");
-        final org.apache.log4j.Level logLevel = commonsLogger.getLevel();
+        final ch.qos.logback.classic.Logger commonsLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery.commons.providers");
         commonsLogger.setLevel(Level.INFO); // change here to DEBUG in case of issues with this test
         final Semaphore serviceSemaphore = new Semaphore(0);
         final Semaphore testSemaphore = new Semaphore(0);

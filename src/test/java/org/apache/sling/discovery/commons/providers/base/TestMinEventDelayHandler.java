@@ -27,19 +27,18 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.spi.RootLogger;
 import org.apache.sling.discovery.commons.providers.BaseTopologyView;
 import org.apache.sling.discovery.commons.providers.DefaultClusterView;
 import org.apache.sling.discovery.commons.providers.DummyTopologyView;
 import org.apache.sling.discovery.commons.providers.EventHelper;
-import org.apache.sling.discovery.commons.providers.base.ViewStateManagerImpl;
 import org.apache.sling.discovery.commons.providers.spi.ClusterSyncService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
 
 public class TestMinEventDelayHandler {
 
@@ -75,7 +74,7 @@ public class TestMinEventDelayHandler {
         sds = new DummyDiscoveryService();
         mgr.installMinEventDelayHandler(sds, scheduler, 1);
 
-        final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
         logLevel = discoveryLogger.getLevel();
         discoveryLogger.setLevel(Level.INFO); // changed from Level.DEBUG
     }
@@ -84,7 +83,7 @@ public class TestMinEventDelayHandler {
     public void teardown() throws Exception {
         mgr = null;
         defaultRandom= null;
-        final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(logLevel);
     }
     

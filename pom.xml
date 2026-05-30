@@ -24,6 +24,7 @@
         <groupId>org.apache.sling</groupId>
         <artifactId>sling-bundle-parent</artifactId>
         <version>48</version>
+        <relativePath />
     </parent>
 
     <artifactId>org.apache.sling.discovery.commons</artifactId>
@@ -185,15 +186,10 @@
             <version>4.4.0</version>
             <scope>test</scope>
         </dependency>
+        <!-- using logback under slf4j to allow fine-grained logging config (see src/test/resources/logback-test.xml) -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.5</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
             <version>1.2.13</version>
             <scope>test</scope>
         </dependency>

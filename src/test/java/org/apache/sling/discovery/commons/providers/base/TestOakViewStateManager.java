@@ -26,8 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.spi.RootLogger;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.commons.scheduler.Scheduler;
 import org.apache.sling.discovery.DiscoveryService;
@@ -50,6 +48,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
 
 public class TestOakViewStateManager implements DiscoveryService {
 
@@ -88,7 +88,7 @@ public class TestOakViewStateManager implements DiscoveryService {
                 // nothing to cancel, we're auto-run
             }
         });
-        final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
         logLevel = discoveryLogger.getLevel();
         discoveryLogger.setLevel(Level.INFO);
         
@@ -107,7 +107,7 @@ public class TestOakViewStateManager implements DiscoveryService {
             mgr.handleDeactivated();
         }
         mgr = null;
-        final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(logLevel);
         logger.info("teardown: end");
     }

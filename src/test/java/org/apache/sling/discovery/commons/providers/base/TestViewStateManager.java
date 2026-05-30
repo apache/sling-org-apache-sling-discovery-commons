@@ -33,8 +33,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.log4j.Level;
-import org.apache.log4j.spi.RootLogger;
 import org.apache.sling.discovery.ClusterView;
 import org.apache.sling.discovery.DiscoveryService;
 import org.apache.sling.discovery.InstanceDescription;
@@ -52,6 +50,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
 
 public class TestViewStateManager {
 
@@ -112,7 +112,7 @@ public class TestViewStateManager {
             }
         });
         defaultRandom = new Random(1234123412); // I want randomness yes, but deterministic, for some methods at least
-        final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
         logLevel = discoveryLogger.getLevel();
         discoveryLogger.setLevel(Level.INFO);
     }
@@ -125,7 +125,7 @@ public class TestViewStateManager {
         }
         mgr = null;
         defaultRandom= null;
-        final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(logLevel);
     }
     
@@ -568,8 +568,7 @@ public class TestViewStateManager {
 
     @Test
     public void testClusterSyncService_noConcurrency() throws Exception {
-        final org.apache.log4j.Logger commonsLogger = RootLogger.getLogger("org.apache.sling.discovery.commons.providers");
-//        final org.apache.log4j.Level logLevel = commonsLogger.getLevel();
+        final ch.qos.logback.classic.Logger commonsLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery.commons.providers");
         commonsLogger.setLevel(Level.INFO); // change here to DEBUG in case of issues with this test
         final Semaphore serviceSemaphore = new Semaphore(0);
         final ReentrantLock lock = new ReentrantLock();
@@ -631,7 +630,7 @@ public class TestViewStateManager {
 
     @Test
     public void testOnlyDiffersInProperties() throws Exception {
-        final org.apache.log4j.Logger discoveryLogger = RootLogger.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(Level.INFO); // changed from Level.DEBUG
         logger.info("testOnlyDiffersInProperties: start");
         final String slingId1 = UUID.randomUUID().toString();
