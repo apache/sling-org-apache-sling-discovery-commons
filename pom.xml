@@ -45,6 +45,8 @@
         <sling.java.version>11</sling.java.version>
         <jackrabbit.version>2.14.3</jackrabbit.version>
         <oak.version>1.62.0</oak.version>
+        <surefire.maxmem>-Xmx2048m</surefire.maxmem>
+        <surefire.argline>${surefire.maxmem}</surefire.argline>
     </properties>
 
     <build>
@@ -69,7 +71,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>-Xmx2048m</argLine>
+                    <argLine>${surefire.argline}</argLine>
                     <excludedGroups>${sling.excluded.surefire.groups}</excludedGroups>
                 </configuration>
             </plugin>
@@ -219,4 +221,15 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- override to pass the extra jacoco arguments to surefire-->
+        <profile>
+            <id>jacoco-report</id>
+            <properties>
+                <surefire.argline>${surefire.maxmem} ${jacoco.command}</surefire.argline>
+            </properties>
+        </profile>
+    </profiles>
+
 </project>
