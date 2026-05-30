@@ -37,7 +37,7 @@ public abstract class AbstractServiceWithBackgroundCheck {
 
     /**
      * The BackgroundCheckRunnable implements the details of
-     * calling BackgroundCheck.check and looping until it 
+     * calling BackgroundCheck.check and looping until it
      * returns true
      */
     final class BackgroundCheckRunnable implements Runnable {
@@ -46,27 +46,27 @@ public abstract class AbstractServiceWithBackgroundCheck {
         private final long timeoutMillis;
         private volatile boolean cancelled;
         private final String threadName;
-        
+
         // for testing only:
         private final Object waitObj = new Object();
         private int waitCnt;
         private volatile boolean done;
         private long waitInterval;
 
-        private BackgroundCheckRunnable(Runnable callback, 
-                BackgroundCheck check, long timeoutMillis, long waitInterval, String threadName) {
+        private BackgroundCheckRunnable(
+                Runnable callback, BackgroundCheck check, long timeoutMillis, long waitInterval, String threadName) {
             this.callback = callback;
             this.check = check;
             this.timeoutMillis = timeoutMillis;
             if (waitInterval <= 0) {
-                throw new IllegalArgumentException("waitInterval must be greater than 0: "+waitInterval);
+                throw new IllegalArgumentException("waitInterval must be greater than 0: " + waitInterval);
             }
             this.waitInterval = waitInterval;
             this.threadName = threadName;
         }
-        
+
         boolean isDone() {
-            synchronized(waitObj) {
+            synchronized (waitObj) {
                 return done;
             }
         }
@@ -75,26 +75,27 @@ public abstract class AbstractServiceWithBackgroundCheck {
         public void run() {
             logger.debug("backgroundCheck.run: start");
             long start = System.currentTimeMillis();
-            try{
-                while(!cancelled()) {
+            try {
+                while (!cancelled()) {
                     if (check.check()) {
                         if (callback != null) {
                             callback.run();
                         }
                         return;
                     }
-                    if (timeoutMillis != -1 && 
-                            (System.currentTimeMillis() > start + timeoutMillis)) {
+                    if (timeoutMillis != -1 && (System.currentTimeMillis() > start + timeoutMillis)) {
                         if (callback == null) {
-                            logSilencer.infoOrDebug("backgroundCheck.run", "backgroundCheck.run: timeout hit (no callback to invoke)");
+                            logSilencer.infoOrDebug(
+                                    "backgroundCheck.run", "backgroundCheck.run: timeout hit (no callback to invoke)");
                         } else {
-                            logSilencer.infoOrDebug("backgroundCheck.run", "backgroundCheck.run: timeout hit, invoking callback.");
+                            logSilencer.infoOrDebug(
+                                    "backgroundCheck.run", "backgroundCheck.run: timeout hit, invoking callback.");
                             callback.run();
                         }
                         return;
                     }
                     logger.trace("backgroundCheck.run: waiting another sec.");
-                    synchronized(waitObj) {
+                    synchronized (waitObj) {
                         waitCnt++;
                         try {
                             waitObj.notify();
@@ -105,45 +106,45 @@ public abstract class AbstractServiceWithBackgroundCheck {
                     }
                 }
                 logger.debug("backgroundCheck.run: this run got cancelled. {}", check);
-            } catch(RuntimeException re) {
-                logger.error("backgroundCheck.run: RuntimeException: "+re, re);
+            } catch (RuntimeException re) {
+                logger.error("backgroundCheck.run: RuntimeException: " + re, re);
                 // nevertheless calling runnable.run in this case
                 if (callback != null) {
                     logger.info("backgroundCheck.run: RuntimeException -> invoking callback");
                     callback.run();
                 }
                 throw re;
-            } catch(Error er) {
-                logger.error("backgroundCheck.run: Error: "+er, er);
+            } catch (Error er) {
+                logger.error("backgroundCheck.run: Error: " + er, er);
                 // not calling runnable.run in this case!
                 // since Error is typically severe
                 logger.info("backgroundCheck.run: NOT invoking callback");
                 throw er;
             } finally {
                 logger.debug("backgroundCheck.run: end");
-                synchronized(waitObj) {
+                synchronized (waitObj) {
                     done = true;
                     waitObj.notify();
                 }
             }
         }
-        
+
         boolean cancelled() {
             return cancelled;
         }
 
         void cancel() {
             if (!done) {
-                logSilencer.infoOrDebug("cancel-" + threadName, "cancel: "+threadName);
+                logSilencer.infoOrDebug("cancel-" + threadName, "cancel: " + threadName);
             }
             cancelled = true;
         }
 
         public void triggerCheck() {
-            synchronized(waitObj) {
+            synchronized (waitObj) {
                 int waitCntAtStart = waitCnt;
                 waitObj.notify();
-                while(!done && waitCnt<=waitCntAtStart) {
+                while (!done && waitCnt <= waitCntAtStart) {
                     try {
                         waitObj.wait();
                     } catch (InterruptedException e) {
@@ -159,20 +160,19 @@ public abstract class AbstractServiceWithBackgroundCheck {
      * checked until it eventually returns true.
      */
     interface BackgroundCheck {
-        
+
         boolean check();
-        
     }
-    
+
     protected BackgroundCheckRunnable backgroundCheckRunnable;
-    
+
     /**
      * Cancel the currently ongoing background check if
      * there is any ongoing.
      */
     protected void cancelPreviousBackgroundCheck() {
         BackgroundCheckRunnable current = backgroundCheckRunnable;
-        if (current!=null) {
+        if (current != null) {
             current.cancel();
             // leave backgroundCheckRunnable field as is
             // as that does not represent a memory leak
@@ -181,7 +181,7 @@ public abstract class AbstractServiceWithBackgroundCheck {
             // back to null is error-prone and overkill
         }
     }
-    
+
     /**
      * Start a new BackgroundCheck in a separate thread, that
      * periodically calls BackgroundCheck.check and upon completion
@@ -195,35 +195,44 @@ public abstract class AbstractServiceWithBackgroundCheck {
      * check was successfully termianted (ie callback was invoked) or
      * whether the timeout has hit (that's left as a TODO if needed).
      */
-    protected void startBackgroundCheck(String threadName, final BackgroundCheck check, final Runnable callback, final long timeoutMillis, final long waitMillis) {
+    protected void startBackgroundCheck(
+            String threadName,
+            final BackgroundCheck check,
+            final Runnable callback,
+            final long timeoutMillis,
+            final long waitMillis) {
         // cancel the current one if it's still running
         cancelPreviousBackgroundCheck();
-        
+
         if (check.check()) {
             // then we're not even going to start the background-thread
             // we're already done
-            if (callback!=null) {
-                logSilencer.infoOrDebug("backgroundCheck", "backgroundCheck: already done, backgroundCheck successful, invoking callback");
+            if (callback != null) {
+                logSilencer.infoOrDebug(
+                        "backgroundCheck",
+                        "backgroundCheck: already done, backgroundCheck successful, invoking callback");
                 callback.run();
             } else {
-                logSilencer.infoOrDebug("backgroundCheck", "backgroundCheck: already done, backgroundCheck successful. no callback to invoke.");
+                logSilencer.infoOrDebug(
+                        "backgroundCheck",
+                        "backgroundCheck: already done, backgroundCheck successful. no callback to invoke.");
             }
             return;
         }
-        logSilencer.infoOrDebug("backgroundCheck-" + threadName,
-                "backgroundCheck: spawning background-thread for '"+threadName+"'");
+        logSilencer.infoOrDebug(
+                "backgroundCheck-" + threadName,
+                "backgroundCheck: spawning background-thread for '" + threadName + "'");
         backgroundCheckRunnable = new BackgroundCheckRunnable(callback, check, timeoutMillis, waitMillis, threadName);
         Thread th = new Thread(backgroundCheckRunnable);
         th.setName(threadName);
         th.setDaemon(true);
         th.start();
     }
-    
 
     /** for testing only! **/
     protected void triggerBackgroundCheck() {
         BackgroundCheckRunnable backgroundOp = backgroundCheckRunnable;
-        if (backgroundOp!=null) {
+        if (backgroundOp != null) {
             backgroundOp.triggerCheck();
         }
     }

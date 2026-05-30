@@ -30,7 +30,7 @@ import jakarta.json.JsonObjectBuilder;
 
 // {"seq":8,"final":true,"id":"aae34e9a-b08d-409e-be10-9ff4106e5387","me":4,"active":[4],"deactivating":[],"inactive":[1,2,3]}
 public class DiscoveryLiteDescriptorBuilder {
-    
+
     private int seqNum;
     private int me;
     private Integer[] activeIds = new Integer[0];
@@ -42,16 +42,16 @@ public class DiscoveryLiteDescriptorBuilder {
     public DiscoveryLiteDescriptorBuilder() {
         // nothing here
     }
-    
+
     @Override
     public String toString() {
         try {
             return asJson();
         } catch (JsonException e) {
-            return "A DiscoLite["+e+"]";
+            return "A DiscoLite[" + e + "]";
         }
     }
-    
+
     public DiscoveryLiteDescriptorBuilder setFinal(boolean isFinal) {
         this.isFinal = isFinal;
         return this;
@@ -86,11 +86,10 @@ public class DiscoveryLiteDescriptorBuilder {
         this.deactivating = deactivating;
         return this;
     }
-    
+
     public String asJson() {
         JsonObjectBuilder json = Json.createObjectBuilder();
-        if (id != null)
-        {
+        if (id != null) {
             json.add("id", id);
         }
         json.add("final", isFinal);
@@ -100,20 +99,17 @@ public class DiscoveryLiteDescriptorBuilder {
         json.add("inactive", toArray(Arrays.asList(inactiveIds)));
         json.add("deactivating", toArray(Arrays.asList(deactivating)));
         StringWriter writer = new StringWriter();
-        
+
         Json.createGenerator(writer).write(json.build()).close();
-        
+
         return writer.toString();
     }
-    
+
     private JsonArray toArray(List<Integer> values) {
         JsonArrayBuilder builder = Json.createArrayBuilder();
-        for (Integer value : values)
-        {
+        for (Integer value : values) {
             builder.add(value);
         }
         return builder.build();
     }
-    
-
 }

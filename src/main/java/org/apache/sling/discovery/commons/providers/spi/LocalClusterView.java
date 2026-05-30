@@ -34,7 +34,7 @@ public class LocalClusterView extends DefaultClusterView {
         super(id);
         this.localClusterSyncTokenId = localClusterSyncTokenId;
     }
-    
+
     public String getLocalClusterSyncTokenId() {
         return localClusterSyncTokenId;
     }

@@ -55,5 +55,4 @@ public final class SimpleCommonsConfig implements DiscoveryLiteConfig {
     public long getClusterSyncServiceIntervalMillis() {
         return bgIntervalMillis;
     }
-
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Licensed to the Apache Software Foundation (ASF) under one
   or more contributor license agreements.  See the NOTICE file
@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.apache.sling</groupId>
         <artifactId>sling-bundle-parent</artifactId>
-        <version>48</version>
+        <version>66</version>
         <relativePath />
     </parent>
 
@@ -32,51 +32,20 @@
 
     <name>Apache Sling Discovery Commons</name>
     <description>Common services related to Sling Discovery</description>
-    
+
     <scm>
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-discovery-commons.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-discovery-commons.git</developerConnection>
+        <tag>HEAD</tag>
         <url>https://github.com/apache/sling-org-apache-sling-discovery-commons.git</url>
-      <tag>HEAD</tag>
-  </scm>
+    </scm>
 
     <properties>
         <project.build.outputTimestamp>1749641770</project.build.outputTimestamp>
-        <sling.java.version>11</sling.java.version>
-        <jackrabbit.version>2.14.3</jackrabbit.version>
-        <oak.version>1.62.0</oak.version>
+        <sling.java.version>17</sling.java.version>
         <surefire.maxmem>-Xmx2048m</surefire.maxmem>
         <surefire.argline>${surefire.maxmem}</surefire.argline>
     </properties>
-
-    <build>
-        <plugins>
-			<!-- discovery.commons exports a few test classes for reuse.
-                 In order for others to use these, the test-jar must be built/installed too.
-                 Note that 'mvn -Dmaven.test.skip=true' does NOT build the test-jar,
-                 however 'mvn -DskipTests' does. -->
-             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>${surefire.argline}</argLine>
-                    <excludedGroups>${sling.excluded.surefire.groups}</excludedGroups>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
     <dependencies>
         <dependency>
             <groupId>org.apache.sling</groupId>
@@ -90,7 +59,7 @@
             <version>2.5.0</version>
             <scope>provided</scope>
         </dependency>
-       <dependency>
+        <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.api</artifactId>
             <version>2.25.4</version>
@@ -99,14 +68,17 @@
         <dependency>
             <groupId>javax.jcr</groupId>
             <artifactId>jcr</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
-            <artifactId>osgi.core</artifactId>
+            <artifactId>org.osgi.framework</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.annotation.versioning</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
@@ -116,7 +88,6 @@
         <dependency>
             <groupId>jakarta.json</groupId>
             <artifactId>jakarta.json-api</artifactId>
-            <version>2.0.2</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -151,6 +122,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.sling</groupId>
@@ -163,11 +135,12 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.testing.sling-mock.junit4</artifactId>
-            <version>3.5.4</version>
+            <version>3.6.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -179,20 +152,19 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.testing.jcr-mock</artifactId>
-            <version>1.6.8</version>
+            <version>1.8.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.4.0</version>
             <scope>test</scope>
         </dependency>
         <!-- using logback under slf4j to allow fine-grained logging config (see src/test/resources/logback-test.xml) -->
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.13</version>
+            <version>1.5.33</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -206,7 +178,7 @@
             <version>2.0.1</version>
             <scope>test</scope>
         </dependency>
-         <!-- still needed to due transitive dependencies of sling mock -->
+        <!-- still needed to due transitive dependencies of sling mock -->
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.commons.johnzon</artifactId>
@@ -220,14 +192,49 @@
             <version>3.0.18</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.parsson</groupId>
+            <artifactId>parsson</artifactId>
+            <version>1.1.9</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- discovery.commons exports a few test classes for reuse.
+                 In order for others to use these, the test-jar must be built/installed too.
+                 Note that 'mvn -Dmaven.test.skip=true' does NOT build the test-jar,
+                 however 'mvn -DskipTests' does. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <argLine>${surefire.argline}</argLine>
+                    <excludedGroups>${sling.excluded.surefire.groups}</excludedGroups>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <profiles>
         <!-- override to pass the extra jacoco arguments to surefire-->
         <profile>
             <id>jacoco-report</id>
             <properties>
-                <surefire.argline>${surefire.maxmem} ${jacoco.command}</surefire.argline>
+                <surefire.argline>${surefire.maxmem} ${jacoco.ut.command}</surefire.argline>
             </properties>
         </profile>
     </profiles>

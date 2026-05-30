@@ -18,13 +18,13 @@
  */
 package org.apache.sling.discovery.commons.providers.util;
 
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import javax.jcr.Node;
 import javax.jcr.RepositoryException;
 import javax.jcr.Session;
+
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.sling.api.resource.PersistenceException;
 import org.apache.sling.api.resource.Resource;
@@ -39,17 +39,16 @@ public class ResourceHelper {
 
     private static final String DEFAULT_RESOURCE_TYPE = "sling:Folder";
 
-    public static Resource getOrCreateResource(
-            final ResourceResolver resourceResolver, final String path)
+    public static Resource getOrCreateResource(final ResourceResolver resourceResolver, final String path)
             throws PersistenceException {
-    	return ResourceUtil.getOrCreateResource(resourceResolver, path,
-    	        DEFAULT_RESOURCE_TYPE, DEFAULT_RESOURCE_TYPE, true);
+        return ResourceUtil.getOrCreateResource(
+                resourceResolver, path, DEFAULT_RESOURCE_TYPE, DEFAULT_RESOURCE_TYPE, true);
     }
 
-    public static boolean deleteResource(
-            final ResourceResolver resourceResolver, final String path) throws PersistenceException {
+    public static boolean deleteResource(final ResourceResolver resourceResolver, final String path)
+            throws PersistenceException {
         final Resource resource = resourceResolver.getResource(path);
-        if (resource==null) {
+        if (resource == null) {
             return false;
         }
         resourceResolver.delete(resource);
@@ -59,18 +58,17 @@ public class ResourceHelper {
     /** Compile a string builder containing the properties of a resource - used for logging **/
     public static StringBuilder getPropertiesForLogging(final Resource resource) {
         ValueMap valueMap;
-        try{
+        try {
             valueMap = resource.adaptTo(ValueMap.class);
-        } catch(RuntimeException re) {
-            return new StringBuilder("non-existing resource: "+resource+" ("+re.getMessage()+")");
+        } catch (RuntimeException re) {
+            return new StringBuilder("non-existing resource: " + resource + " (" + re.getMessage() + ")");
         }
-        if (valueMap==null) {
-            return new StringBuilder("non-existing resource: "+resource+" (no ValueMap)");
+        if (valueMap == null) {
+            return new StringBuilder("non-existing resource: " + resource + " (no ValueMap)");
         }
         final Set<Entry<String, Object>> entrySet = valueMap.entrySet();
         final StringBuilder sb = new StringBuilder();
-        for (Iterator<Entry<String, Object>> it = entrySet.iterator(); it
-                .hasNext();) {
+        for (Iterator<Entry<String, Object>> it = entrySet.iterator(); it.hasNext(); ) {
             Entry<String, Object> entry = it.next();
             sb.append(" ");
             sb.append(entry.getKey());
@@ -82,7 +80,7 @@ public class ResourceHelper {
 
     /**
      * Move resource to given path. Try to do it optimized via JCR API.
-     * If JCR is not available, fallback to Sling Resource API. 
+     * If JCR is not available, fallback to Sling Resource API.
      * @param res Source resource
      * @param path Target path
      * @throws PersistenceException
@@ -93,16 +91,14 @@ public class ResourceHelper {
             try {
                 Session session = node.getSession();
                 session.move(res.getPath(), path);
-            }
-            catch (RepositoryException re) {
+            } catch (RepositoryException re) {
                 throw new PersistenceException("Move from " + res.getPath() + " to " + path + " failed.", re);
             }
-        }
-        else {
+        } else {
             moveResourceWithResourceAPI(res, path);
         }
     }
-    
+
     /**
      * Move resource to given path with Sling Resource API.
      * @param res Source resource
@@ -128,7 +124,8 @@ public class ResourceHelper {
      * @param name Destination resource name
      * @throws PersistenceException
      */
-    private static void copyResourceWithResourceAPI(Resource source, Resource destParent, String name) throws PersistenceException {
+    private static void copyResourceWithResourceAPI(Resource source, Resource destParent, String name)
+            throws PersistenceException {
         Resource copy = source.getResourceResolver().create(destParent, name, ResourceUtil.getValueMap(source));
         Iterator<Resource> children = source.listChildren();
         while (children.hasNext()) {
@@ -136,5 +133,4 @@ public class ResourceHelper {
             copyResourceWithResourceAPI(child, copy, child.getName());
         }
     }
-
 }

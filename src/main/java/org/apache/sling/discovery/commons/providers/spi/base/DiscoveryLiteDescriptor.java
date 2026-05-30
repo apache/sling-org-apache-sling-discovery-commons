@@ -18,18 +18,18 @@
  */
 package org.apache.sling.discovery.commons.providers.spi.base;
 
+import javax.jcr.Session;
+
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.jcr.Session;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 import jakarta.json.JsonReaderFactory;
-
 import org.apache.sling.api.resource.ResourceResolver;
 
 /**
@@ -41,6 +41,7 @@ public class DiscoveryLiteDescriptor {
     public static final String OAK_DISCOVERYLITE_CLUSTERVIEW = "oak.discoverylite.clusterview";
 
     private static final JsonReaderFactory jsonReaderFactory;
+
     static {
         Map<String, Object> config = new HashMap<String, Object>();
         config.put("org.apache.johnzon.supports-comments", true);
@@ -52,9 +53,10 @@ public class DiscoveryLiteDescriptor {
     public static DiscoveryLiteDescriptor getDescriptorFrom(ResourceResolver resourceResolver) throws Exception {
         Session session = resourceResolver.adaptTo(Session.class);
         if (session == null) {
-            throw new Exception("Could not adapt resourceResolver to session: "+resourceResolver);
+            throw new Exception("Could not adapt resourceResolver to session: " + resourceResolver);
         }
-        String descriptorStr = session.getRepository().getDescriptor(DiscoveryLiteDescriptor.OAK_DISCOVERYLITE_CLUSTERVIEW);
+        String descriptorStr =
+                session.getRepository().getDescriptor(DiscoveryLiteDescriptor.OAK_DISCOVERYLITE_CLUSTERVIEW);
         if (descriptorStr == null) {
             throw new Exception("No value available for descriptor " + OAK_DISCOVERYLITE_CLUSTERVIEW);
         }
@@ -63,14 +65,14 @@ public class DiscoveryLiteDescriptor {
             return new DiscoveryLiteDescriptor(descriptor);
         }
     }
-    
+
     /** the actual descriptor **/
     private final JsonObject descriptor;
 
     DiscoveryLiteDescriptor(JsonObject descriptor) {
         this.descriptor = descriptor;
     }
-    
+
     /**
      * Returns the 'me' field of the discovery-lite descriptor
      * @return the 'me' field of the discovery-lite descriptor
@@ -79,12 +81,12 @@ public class DiscoveryLiteDescriptor {
     public int getMyId() throws Exception {
         return descriptor.getInt("me");
     }
-    
+
     private int[] getArray(String name) throws Exception {
         JsonArray deactivating = descriptor.getJsonArray(name);
-        
+
         int[] result = new int[deactivating.size()];
-        for(int i=0; i<deactivating.size(); i++) {
+        for (int i = 0; i < deactivating.size(); i++) {
             result[i] = deactivating.getInt(i);
         }
         return result;
@@ -126,7 +128,7 @@ public class DiscoveryLiteDescriptor {
     public String toString() {
         return getDescriptorStr();
     }
-    
+
     /**
      * Returns the raw toString of the underlying descriptor
      * @return the raw toString of the underlying descriptor
@@ -144,5 +146,4 @@ public class DiscoveryLiteDescriptor {
     public boolean isFinal() throws Exception {
         return descriptor.getBoolean("final");
     }
-
 }

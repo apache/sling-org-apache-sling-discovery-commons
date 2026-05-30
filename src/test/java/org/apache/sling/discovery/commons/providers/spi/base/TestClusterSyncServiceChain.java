@@ -18,11 +18,6 @@
  */
 package org.apache.sling.discovery.commons.providers.spi.base;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -31,6 +26,11 @@ import org.apache.sling.discovery.commons.providers.DummyTopologyView;
 import org.apache.sling.discovery.commons.providers.spi.ClusterSyncService;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestClusterSyncServiceChain {
 
@@ -47,7 +47,6 @@ public class TestClusterSyncServiceChain {
         public void cancelSync() {
             cancelled = true;
         }
-
     }
 
     class SimpleRunnable implements Runnable {
@@ -56,7 +55,6 @@ public class TestClusterSyncServiceChain {
         public void run() {
             // nothing done here so far
         }
-
     }
 
     ClusterSyncServiceChain chain;

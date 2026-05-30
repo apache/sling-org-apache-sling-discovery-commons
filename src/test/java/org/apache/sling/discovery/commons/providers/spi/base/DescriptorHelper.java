@@ -18,47 +18,46 @@
  */
 package org.apache.sling.discovery.commons.providers.spi.base;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
-import java.lang.reflect.Method;
-
 import javax.jcr.Repository;
 import javax.jcr.Session;
 
-import org.apache.jackrabbit.commons.SimpleValueFactory;
+import java.lang.reflect.Method;
 
+import org.apache.jackrabbit.commons.SimpleValueFactory;
 import org.apache.jackrabbit.oak.spi.descriptors.GenericDescriptors;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 public class DescriptorHelper {
 
-    public static void setDiscoveryLiteDescriptor(ResourceResolverFactory factory, DiscoveryLiteDescriptorBuilder builder) throws Exception {
+    public static void setDiscoveryLiteDescriptor(
+            ResourceResolverFactory factory, DiscoveryLiteDescriptorBuilder builder) throws Exception {
         setDescriptor(factory, DiscoveryLiteDescriptor.OAK_DISCOVERYLITE_CLUSTERVIEW, builder.asJson());
     }
 
-    public static void setDescriptor(ResourceResolverFactory factory, String key,
-            String value) throws Exception {
+    public static void setDescriptor(ResourceResolverFactory factory, String key, String value) throws Exception {
         ResourceResolver resourceResolver = factory.getServiceResourceResolver(null);
-        try{
+        try {
             Session session = resourceResolver.adaptTo(Session.class);
             if (session == null) {
                 return;
             }
             Repository repo = session.getRepository();
 
-            //<hack>
-//            Method setDescriptorMethod = repo.getClass().
-//                    getDeclaredMethod("setDescriptor", String.class, String.class);
-//            if (setDescriptorMethod!=null) {
-//                setDescriptorMethod.setAccessible(true);
-//                setDescriptorMethod.invoke(repo, key, value);
-//            } else {
-//                fail("could not get 'setDescriptor' method");
-//            }
+            // <hack>
+            //            Method setDescriptorMethod = repo.getClass().
+            //                    getDeclaredMethod("setDescriptor", String.class, String.class);
+            //            if (setDescriptorMethod!=null) {
+            //                setDescriptorMethod.setAccessible(true);
+            //                setDescriptorMethod.invoke(repo, key, value);
+            //            } else {
+            //                fail("could not get 'setDescriptor' method");
+            //            }
             Method getDescriptorsMethod = repo.getClass().getDeclaredMethod("getDescriptors");
-            if (getDescriptorsMethod==null) {
+            if (getDescriptorsMethod == null) {
                 fail("could not get 'getDescriptors' method");
             } else {
                 getDescriptorsMethod.setAccessible(true);
@@ -66,13 +65,13 @@ public class DescriptorHelper {
                 SimpleValueFactory valueFactory = new SimpleValueFactory();
                 descriptors.put(key, valueFactory.createValue(value), true, true);
             }
-            //</hack>
+            // </hack>
 
-            //<verify-hack>
+            // <verify-hack>
             assertEquals(value, repo.getDescriptor(key));
-            //</verify-hack>
+            // </verify-hack>
         } finally {
-            if (resourceResolver!=null) {
+            if (resourceResolver != null) {
                 resourceResolver.close();
             }
         }

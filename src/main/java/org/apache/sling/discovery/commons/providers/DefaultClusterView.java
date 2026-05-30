@@ -30,7 +30,7 @@ import org.apache.sling.discovery.InstanceDescription;
  * Default implementation of the ClusterView interface.
  * <p>
  * Besides implementing the interface methods it also
- * adds add/remove of InstanceDescriptions as well as 
+ * adds add/remove of InstanceDescriptions as well as
  * implementing equals and hashCode.
  */
 public class DefaultClusterView implements ClusterView {
@@ -63,8 +63,7 @@ public class DefaultClusterView implements ClusterView {
         if (this.instances.size() != other.instances.size()) {
             return false;
         }
-        for (Iterator<InstanceDescription> it = instances.iterator(); it
-                .hasNext();) {
+        for (Iterator<InstanceDescription> it = instances.iterator(); it.hasNext(); ) {
             InstanceDescription instance = it.next();
             if (!other.instances.contains(instance)) {
                 return false;
@@ -72,13 +71,13 @@ public class DefaultClusterView implements ClusterView {
         }
         return true;
     }
-    
+
     @Override
     public String toString() {
         if (instances.size() == 0) {
             return "a ClusterView[no instances]";
         } else if (instances.size() == 1) {
-            return "a ClusterView[1 instance: "+instances.get(0).getSlingId()+"]";
+            return "a ClusterView[1 instance: " + instances.get(0).getSlingId() + "]";
         } else {
             StringBuffer sb = new StringBuffer();
             for (InstanceDescription id : instances) {
@@ -109,8 +108,7 @@ public class DefaultClusterView implements ClusterView {
             throw new IllegalArgumentException("cannot add same instance twice");
         }
         if (instance.isLeader() && doGetLeader() != null) {
-            throw new IllegalArgumentException(
-                    "cannot add another leader. there already is one");
+            throw new IllegalArgumentException("cannot add another leader. there already is one");
         }
         instances.add(instance);
         instance.setClusterView(this);
@@ -136,8 +134,7 @@ public class DefaultClusterView implements ClusterView {
      * @return the leader of this cluster - should never return null
      */
     private InstanceDescription doGetLeader() {
-        for (Iterator<InstanceDescription> it = instances.iterator(); it
-                .hasNext();) {
+        for (Iterator<InstanceDescription> it = instances.iterator(); it.hasNext(); ) {
             InstanceDescription anInstance = it.next();
             if (anInstance.isLeader()) {
                 return anInstance;
@@ -155,7 +152,7 @@ public class DefaultClusterView implements ClusterView {
     public boolean removeInstanceDescription(InstanceDescription instance) {
         return instances.remove(instance);
     }
-    
+
     /**
      * Returns the local InstanceDescription or null if no local instance is listed
      * @return the local InstanceDescription or null if no local instance is listed
@@ -163,11 +160,10 @@ public class DefaultClusterView implements ClusterView {
      */
     public InstanceDescription getLocalInstance() {
         InstanceDescription local = null;
-        for (Iterator<InstanceDescription> it = getInstances().iterator(); 
-                it.hasNext();) {
+        for (Iterator<InstanceDescription> it = getInstances().iterator(); it.hasNext(); ) {
             InstanceDescription instance = it.next();
             if (instance.isLocal()) {
-                if (local!=null) {
+                if (local != null) {
                     throw new IllegalStateException("found multiple local instances!?");
                 }
                 local = instance;
@@ -176,5 +172,4 @@ public class DefaultClusterView implements ClusterView {
         }
         return local;
     }
-
 }

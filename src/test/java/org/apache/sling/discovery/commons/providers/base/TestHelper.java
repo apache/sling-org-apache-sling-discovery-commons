@@ -18,10 +18,6 @@
  */
 package org.apache.sling.discovery.commons.providers.base;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
 import java.util.HashMap;
 import java.util.Random;
 import java.util.UUID;
@@ -35,6 +31,10 @@ import org.apache.sling.discovery.commons.providers.EventHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+
 public class TestHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(TestHelper.class);
@@ -45,26 +45,26 @@ public class TestHelper {
         for (int i = 0; i < events.length; i++) {
             TopologyEvent e = events[i];
             assertEquals(e.getType(), listener.getEvents().get(i).getType());
-            switch(e.getType()) {
-            case TOPOLOGY_INIT: {
-                assertNull(listener.getEvents().get(i).getOldView());
-                assertEquals(e.getNewView(), listener.getEvents().get(i).getNewView());
-                break;
-            }
-            case TOPOLOGY_CHANGING: {
-                assertEquals(e.getOldView(), listener.getEvents().get(i).getOldView());
-                assertNull(listener.getEvents().get(i).getNewView());
-                break;
-            }
-            case PROPERTIES_CHANGED:
-            case TOPOLOGY_CHANGED: {
-                assertEquals(e.getOldView(), listener.getEvents().get(i).getOldView());
-                assertEquals(e.getNewView(), listener.getEvents().get(i).getNewView());
-                break;
-            }
-            default: {
-                fail("no other type supported yet");
-            }
+            switch (e.getType()) {
+                case TOPOLOGY_INIT: {
+                    assertNull(listener.getEvents().get(i).getOldView());
+                    assertEquals(e.getNewView(), listener.getEvents().get(i).getNewView());
+                    break;
+                }
+                case TOPOLOGY_CHANGING: {
+                    assertEquals(e.getOldView(), listener.getEvents().get(i).getOldView());
+                    assertNull(listener.getEvents().get(i).getNewView());
+                    break;
+                }
+                case PROPERTIES_CHANGED:
+                case TOPOLOGY_CHANGED: {
+                    assertEquals(e.getOldView(), listener.getEvents().get(i).getOldView());
+                    assertEquals(e.getNewView(), listener.getEvents().get(i).getNewView());
+                    break;
+                }
+                default: {
+                    fail("no other type supported yet");
+                }
             }
         }
         listener.clearEvents();
@@ -72,7 +72,7 @@ public class TestHelper {
 
     public static void waitForAsyncEvents(ViewStateManagerImpl mgr) {
         int sleep = 1;
-        while(true) {
+        while (true) {
             if (!mgr.getAsyncEventSender().hasInFlightEvent()) {
                 return;
             }
@@ -82,10 +82,10 @@ public class TestHelper {
             try {
                 Thread.sleep(sleep);
             } catch (InterruptedException e) {
-                logger.error("waitForFlush: got interrupted: "+e, e);
+                logger.error("waitForFlush: got interrupted: " + e, e);
             }
             // minor back-off up until 20ms
-            sleep = Math.min(20, sleep+1);
+            sleep = Math.min(20, sleep + 1);
         }
     }
 
@@ -96,8 +96,15 @@ public class TestHelper {
     /** does couple loops randomly calling handleChanging() (or not) and then handleNewView().
      * Note: random is passed to allow customizing and not hardcoding this method to a particular random
      * @throws InterruptedException **/
-    public static void randomEventLoop(ViewStateManagerImpl mgr, DummyDiscoveryService sds, int loopSize, int delayInMillis, final Random random, DummyListener... listeners) throws InterruptedException {
-        for(int i=0; i<loopSize; i++) {
+    public static void randomEventLoop(
+            ViewStateManagerImpl mgr,
+            DummyDiscoveryService sds,
+            int loopSize,
+            int delayInMillis,
+            final Random random,
+            DummyListener... listeners)
+            throws InterruptedException {
+        for (int i = 0; i < loopSize; i++) {
             final boolean shouldCallChanging = random.nextBoolean();
             if (shouldCallChanging) {
                 // dont always do a changing
@@ -108,41 +115,45 @@ public class TestHelper {
                 logger.debug("randomEventLoop: waiting for async events....");
                 waitForAsyncEvents(mgr);
                 logger.debug("randomEventLoop: asserting CHANGING event was sent...");
-                for(int j=0; j<listeners.length; j++) {
+                for (int j = 0; j < listeners.length; j++) {
                     assertEvents(mgr, listeners[j], EventHelper.newChangingEvent(listeners[j].getLastView()));
                 }
             } else {
                 logger.debug("randomEventLoop: asserting no events...");
-                for(int j=0; j<listeners.length; j++) {
+                for (int j = 0; j < listeners.length; j++) {
                     assertNoEvents(listeners[j]);
                 }
             }
             final DummyTopologyView view = new DummyTopologyView().addInstance();
             BaseTopologyView[] lastViews = new BaseTopologyView[listeners.length];
-            for(int j=0; j<listeners.length; j++) {
+            for (int j = 0; j < listeners.length; j++) {
                 lastViews[j] = listeners[j].getLastView();
             }
             logger.debug("randomEventLoop: calling handleNewView");
-            if (sds!=null) {
+            if (sds != null) {
                 sds.setTopoology(view);
             }
             DummyTopologyView clonedView = view.clone();
             mgr.handleNewView(view);
-            if (delayInMillis>0) {
-                logger.debug("randomEventLoop: waiting "+delayInMillis+"ms ...");
+            if (delayInMillis > 0) {
+                logger.debug("randomEventLoop: waiting " + delayInMillis + "ms ...");
                 Thread.sleep(delayInMillis);
-                logger.debug("randomEventLoop: waiting "+delayInMillis+"ms done.");
+                logger.debug("randomEventLoop: waiting " + delayInMillis + "ms done.");
             }
             assertEquals(0, mgr.waitForAsyncEvents(500));
             if (!shouldCallChanging) {
                 // in that case I should still get a CHANGING - by contract
                 logger.debug("randomEventLoop: asserting CHANGING, CHANGED events were sent");
-                for(int j=0; j<listeners.length; j++) {
-                    assertEvents(mgr, listeners[j], EventHelper.newChangingEvent(lastViews[j]), EventHelper.newChangedEvent(lastViews[j], view));
+                for (int j = 0; j < listeners.length; j++) {
+                    assertEvents(
+                            mgr,
+                            listeners[j],
+                            EventHelper.newChangingEvent(lastViews[j]),
+                            EventHelper.newChangedEvent(lastViews[j], view));
                 }
             } else {
                 logger.debug("randomEventLoop: asserting CHANGED event was sent");
-                for(int j=0; j<listeners.length; j++) {
+                for (int j = 0; j < listeners.length; j++) {
                     assertEvents(mgr, listeners[j], EventHelper.newChangedEvent(lastViews[j], clonedView));
                 }
             }
@@ -150,15 +161,17 @@ public class TestHelper {
     }
 
     public static DummyTopologyView newView(boolean isCurrent, String leaderId, String localId, String... slingIds) {
-        return newView(UUID.randomUUID().toString(), UUID.randomUUID().toString(), isCurrent, leaderId, localId, slingIds);
+        return newView(
+                UUID.randomUUID().toString(), UUID.randomUUID().toString(), isCurrent, leaderId, localId, slingIds);
     }
 
-    public static DummyTopologyView newView(String syncId, String clusterId, boolean isCurrent, String leaderId, String localId, String... slingIds) {
+    public static DummyTopologyView newView(
+            String syncId, String clusterId, boolean isCurrent, String leaderId, String localId, String... slingIds) {
         DummyTopologyView topology = new DummyTopologyView(syncId);
         DefaultClusterView cluster = new DefaultClusterView(clusterId);
         for (String slingId : slingIds) {
-            DefaultInstanceDescription id = new DefaultInstanceDescription(cluster,
-                    slingId.equals(leaderId), slingId.equals(localId), slingId, new HashMap<String, String>());
+            DefaultInstanceDescription id = new DefaultInstanceDescription(
+                    cluster, slingId.equals(leaderId), slingId.equals(localId), slingId, new HashMap<String, String>());
             topology.addInstanceDescription(id);
         }
         if (!isCurrent) {

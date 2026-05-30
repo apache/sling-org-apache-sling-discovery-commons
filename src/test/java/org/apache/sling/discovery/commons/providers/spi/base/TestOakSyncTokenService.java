@@ -18,11 +18,6 @@
  */
 package org.apache.sling.discovery.commons.providers.spi.base;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -49,25 +44,30 @@ import org.osgi.framework.BundleContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 public class TestOakSyncTokenService {
 
-    private final static Logger logger = LoggerFactory.getLogger(TestOakSyncTokenService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TestOakSyncTokenService.class);
 
     ResourceResolverFactory factory1;
     ResourceResolverFactory factory2;
     private IdMapService idMapService1;
     private String slingId1;
-    
+
     @Before
     public void setup() throws Exception {
         logger.info("setup: start");
-        
+
         BundleContext bundleContext1 = MockOsgi.newBundleContext();
         BundleContext bundleContext2 = MockOsgi.newBundleContext();
-        
+
         // We need to create to ResourceResolverFactories that share the same repository. This is not supported
         // with the current sling jcr mocks so ... we improvise
-        
+
         // 1. create two SlingRepository instances and make sure that they share the same nodeStore
         OakMockResourceResolverAdapter oakAdapter = new OakMockResourceResolverAdapter();
         SlingRepository initialRepo = oakAdapter.newSlingRepository();
@@ -79,30 +79,34 @@ public class TestOakSyncTokenService {
         field = secondRepo.getClass().getDeclaredField("nodeStore");
         field.setAccessible(true);
         field.set(secondRepo, nodeStore);
-        
 
         // 2. create the two ResourceResolverFactories from existing SlingRepository instances by using
         // the internal ResourceResolverFactoryInitializer class
-        Class<?> initialiserClass = getClass().getClassLoader().loadClass("org.apache.sling.testing.mock.sling.ResourceResolverFactoryInitializer");
-        Method setupMethod = initialiserClass.getMethod("setUp", SlingRepository.class, BundleContext.class, NodeTypeMode.class);
+        Class<?> initialiserClass = getClass()
+                .getClassLoader()
+                .loadClass("org.apache.sling.testing.mock.sling.ResourceResolverFactoryInitializer");
+        Method setupMethod =
+                initialiserClass.getMethod("setUp", SlingRepository.class, BundleContext.class, NodeTypeMode.class);
         setupMethod.setAccessible(true);
-        factory1 = (ResourceResolverFactory) setupMethod.invoke(null,
-                initialRepo, bundleContext1, NodeTypeMode.NODETYPES_REQUIRED);
+        factory1 = (ResourceResolverFactory)
+                setupMethod.invoke(null, initialRepo, bundleContext1, NodeTypeMode.NODETYPES_REQUIRED);
 
-        factory2 = (ResourceResolverFactory) setupMethod.invoke(null,
-                secondRepo, bundleContext2, NodeTypeMode.NODETYPES_REQUIRED);
-        
+        factory2 = (ResourceResolverFactory)
+                setupMethod.invoke(null, secondRepo, bundleContext2, NodeTypeMode.NODETYPES_REQUIRED);
+
         slingId1 = UUID.randomUUID().toString();
-        idMapService1 = IdMapService.testConstructor(new SimpleCommonsConfig(), new DummySlingSettingsService(slingId1), factory1);
+        idMapService1 = IdMapService.testConstructor(
+                new SimpleCommonsConfig(), new DummySlingSettingsService(slingId1), factory1);
         logger.info("setup: end");
     }
-    
+
     @Test
     public void testOneNode() throws Exception {
         logger.info("testOneNode: start");
         DummyTopologyView one = TestHelper.newView(true, slingId1, slingId1, slingId1);
         Lock lock = new ReentrantLock();
-        OakBacklogClusterSyncService cs = OakBacklogClusterSyncService.testConstructorAndActivate(new SimpleCommonsConfig(), idMapService1, new DummySlingSettingsService(slingId1), factory1);
+        OakBacklogClusterSyncService cs = OakBacklogClusterSyncService.testConstructorAndActivate(
+                new SimpleCommonsConfig(), idMapService1, new DummySlingSettingsService(slingId1), factory1);
         ViewStateManager vsm = ViewStateManagerFactory.newViewStateManager(lock, cs);
         DummyListener l = new DummyListener();
         assertEquals(0, l.countEvents());
@@ -116,21 +120,24 @@ public class TestOakSyncTokenService {
         cs.triggerBackgroundCheck();
         assertEquals(0, l.countEvents());
         cs.triggerBackgroundCheck();
-        DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().me(1).seq(1).activeIds(1).setFinal(true));
+        DescriptorHelper.setDiscoveryLiteDescriptor(
+                factory1,
+                new DiscoveryLiteDescriptorBuilder().me(1).seq(1).activeIds(1).setFinal(true));
         assertTrue(idMapService1.waitForInit(5000));
         cs.triggerBackgroundCheck();
         assertEquals(0, vsm.waitForAsyncEvents(1000));
         assertEquals(1, l.countEvents());
         logger.info("testOneNode: end");
     }
-    
+
     @Test
     public void testTwoNodesOneLeaving() throws Exception {
         logger.info("testTwoNodesOneLeaving: start");
         String slingId2 = UUID.randomUUID().toString();
         DummyTopologyView two1 = TestHelper.newView(true, slingId1, slingId1, slingId1, slingId2);
         Lock lock1 = new ReentrantLock();
-        OakBacklogClusterSyncService cs1 = OakBacklogClusterSyncService.testConstructorAndActivate(new SimpleCommonsConfig(), idMapService1, new DummySlingSettingsService(slingId1), factory1);
+        OakBacklogClusterSyncService cs1 = OakBacklogClusterSyncService.testConstructorAndActivate(
+                new SimpleCommonsConfig(), idMapService1, new DummySlingSettingsService(slingId1), factory1);
         ViewStateManager vsm1 = ViewStateManagerFactory.newViewStateManager(lock1, cs1);
         DummyListener l = new DummyListener();
         vsm1.bind(l);
@@ -138,10 +145,17 @@ public class TestOakSyncTokenService {
         vsm1.handleNewView(two1);
         cs1.triggerBackgroundCheck();
         assertEquals(0, l.countEvents());
-        DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(1).seq(1).activeIds(1).deactivatingIds(2));
+        DescriptorHelper.setDiscoveryLiteDescriptor(
+                factory1,
+                new DiscoveryLiteDescriptorBuilder()
+                        .setFinal(true)
+                        .me(1)
+                        .seq(1)
+                        .activeIds(1)
+                        .deactivatingIds(2));
         cs1.triggerBackgroundCheck();
         assertEquals(0, l.countEvents());
-        
+
         // make an assertion that the background runnable is at this stage - even with
         // a 2sec sleep - waiting for the deactivating instance to disappear
         logger.info("testTwoNodesOneLeaving: sync service should be waiting for backlog to disappear");
@@ -150,43 +164,57 @@ public class TestOakSyncTokenService {
         assertNotNull(backgroundCheckRunnable);
         assertFalse(backgroundCheckRunnable.isDone());
         assertFalse(backgroundCheckRunnable.cancelled());
-        
+
         // release the deactivating instance by removing it from the clusterView
         logger.info("testTwoNodesOneLeaving: freeing backlog - sync service should finish up");
-        DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(1).seq(2).activeIds(1));
+        DescriptorHelper.setDiscoveryLiteDescriptor(
+                factory1,
+                new DiscoveryLiteDescriptorBuilder().setFinal(true).me(1).seq(2).activeIds(1));
         cs1.triggerBackgroundCheck();
-        
+
         // now give this thing 2 sec to settle
         Thread.sleep(2000);
-        
+
         // after that, the backgroundRunnable should be done and no events stuck in vsm
         backgroundCheckRunnable = cs1.backgroundCheckRunnable;
         assertNotNull(backgroundCheckRunnable);
         assertFalse(backgroundCheckRunnable.cancelled());
         assertTrue(backgroundCheckRunnable.isDone());
         assertEquals(0, vsm1.waitForAsyncEvents(1000));
-        
+
         logger.info("testTwoNodesOneLeaving: setting up 2nd node");
         Lock lock2 = new ReentrantLock();
         IdMapService idMapService2 = IdMapService.testConstructor(
                 new SimpleCommonsConfig(), new DummySlingSettingsService(slingId2), factory2);
-        OakBacklogClusterSyncService cs2 = OakBacklogClusterSyncService.testConstructorAndActivate(new SimpleCommonsConfig(), idMapService2, new DummySlingSettingsService(slingId2), factory2);
+        OakBacklogClusterSyncService cs2 = OakBacklogClusterSyncService.testConstructorAndActivate(
+                new SimpleCommonsConfig(), idMapService2, new DummySlingSettingsService(slingId2), factory2);
         ViewStateManager vsm2 = ViewStateManagerFactory.newViewStateManager(lock2, cs2);
         cs1.triggerBackgroundCheck();
         cs2.triggerBackgroundCheck();
         assertEquals(1, l.countEvents());
-        DescriptorHelper.setDiscoveryLiteDescriptor(factory2, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(2).seq(3).activeIds(1, 2));
+        DescriptorHelper.setDiscoveryLiteDescriptor(
+                factory2,
+                new DiscoveryLiteDescriptorBuilder().setFinal(true).me(2).seq(3).activeIds(1, 2));
         cs1.triggerBackgroundCheck();
         cs2.triggerBackgroundCheck();
         assertEquals(1, l.countEvents());
-        DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(1).seq(3).activeIds(1, 2));
+        DescriptorHelper.setDiscoveryLiteDescriptor(
+                factory1,
+                new DiscoveryLiteDescriptorBuilder().setFinal(true).me(1).seq(3).activeIds(1, 2));
         cs1.triggerBackgroundCheck();
         cs2.triggerBackgroundCheck();
         assertEquals(1, l.countEvents());
         vsm2.handleActivated();
         assertTrue(idMapService1.waitForInit(5000));
         assertTrue(idMapService2.waitForInit(5000));
-        DummyTopologyView two2 = TestHelper.newView(two1.getLocalClusterSyncTokenId(), two1.getLocalInstance().getClusterView().getId(), true, slingId1, slingId1, slingId1, slingId2);
+        DummyTopologyView two2 = TestHelper.newView(
+                two1.getLocalClusterSyncTokenId(),
+                two1.getLocalInstance().getClusterView().getId(),
+                true,
+                slingId1,
+                slingId1,
+                slingId1,
+                slingId2);
         vsm2.handleNewView(two2);
         cs1.triggerBackgroundCheck();
         cs1.triggerBackgroundCheck();
@@ -194,11 +222,19 @@ public class TestOakSyncTokenService {
         cs2.triggerBackgroundCheck();
         assertEquals(0, vsm1.waitForAsyncEvents(1000));
         assertEquals(1, l.countEvents());
-        
-        logger.info("testTwoNodesOneLeaving: removing instance2 from the view - even though vsm1 didn't really know about it, it should send a TOPOLOGY_CHANGING - we leave it as deactivating for now...");
+
+        logger.info(
+                "testTwoNodesOneLeaving: removing instance2 from the view - even though vsm1 didn't really know about it, it should send a TOPOLOGY_CHANGING - we leave it as deactivating for now...");
         DummyTopologyView oneLeaving = two1.clone();
         oneLeaving.removeInstance(slingId2);
-        DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(1).seq(1).activeIds(1).deactivatingIds(2));
+        DescriptorHelper.setDiscoveryLiteDescriptor(
+                factory1,
+                new DiscoveryLiteDescriptorBuilder()
+                        .setFinal(true)
+                        .me(1)
+                        .seq(1)
+                        .activeIds(1)
+                        .deactivatingIds(2));
         vsm1.handleNewView(oneLeaving);
         cs1.triggerBackgroundCheck();
         cs2.triggerBackgroundCheck();
@@ -206,8 +242,16 @@ public class TestOakSyncTokenService {
         assertEquals(0, vsm1.waitForAsyncEvents(5000));
         assertEquals(2, l.countEvents());
 
-        logger.info("testTwoNodesOneLeaving: marking instance2 as no longer deactivating, so vsm1 should now send a TOPOLOGY_CHANGED");
-        DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(1).seq(2).activeIds(1).inactiveIds(2));
+        logger.info(
+                "testTwoNodesOneLeaving: marking instance2 as no longer deactivating, so vsm1 should now send a TOPOLOGY_CHANGED");
+        DescriptorHelper.setDiscoveryLiteDescriptor(
+                factory1,
+                new DiscoveryLiteDescriptorBuilder()
+                        .setFinal(true)
+                        .me(1)
+                        .seq(2)
+                        .activeIds(1)
+                        .inactiveIds(2));
         cs1.triggerBackgroundCheck();
         cs2.triggerBackgroundCheck();
         // wait for TOPOLOGY_CHANGED to be received by vsm1
@@ -215,7 +259,7 @@ public class TestOakSyncTokenService {
         RepositoryTestHelper.dumpRepo(factory1);
         assertEquals(3, l.countEvents());
     }
-    
+
     @Test
     public void testRapidIdMapServiceActivateDeactivate() throws Exception {
         BackgroundCheckRunnable bgCheckRunnable = getBackgroundCheckRunnable(idMapService1);
@@ -227,8 +271,9 @@ public class TestOakSyncTokenService {
         assertNotNull(bgCheckRunnable);
         assertTrue(bgCheckRunnable.isDone());
     }
-    
-    private BackgroundCheckRunnable getBackgroundCheckRunnable(IdMapService idMapService) throws NoSuchFieldException, IllegalAccessException {
+
+    private BackgroundCheckRunnable getBackgroundCheckRunnable(IdMapService idMapService)
+            throws NoSuchFieldException, IllegalAccessException {
         Field field = idMapService.getClass().getSuperclass().getDeclaredField("backgroundCheckRunnable");
         field.setAccessible(true);
         Object backgroundCheckRunnable = field.get(idMapService);
@@ -238,7 +283,8 @@ public class TestOakSyncTokenService {
     @Test
     public void testPartiallyStartedInstance() throws Exception {
         logger.info("testPartiallyStartedInstance: start");
-        OakBacklogClusterSyncService cs = OakBacklogClusterSyncService.testConstructorAndActivate(new SimpleCommonsConfig(), idMapService1, new DummySlingSettingsService(slingId1), factory1);
+        OakBacklogClusterSyncService cs = OakBacklogClusterSyncService.testConstructorAndActivate(
+                new SimpleCommonsConfig(), idMapService1, new DummySlingSettingsService(slingId1), factory1);
         Lock lock = new ReentrantLock();
         ViewStateManager vsm = ViewStateManagerFactory.newViewStateManager(lock, cs);
         DummyListener l = new DummyListener();
@@ -252,7 +298,13 @@ public class TestOakSyncTokenService {
             cs.triggerBackgroundCheck();
             assertEquals(0, vsm.waitForAsyncEvents(1000));
             assertEquals(0, l.countEvents());
-            DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().me(1).seq(1).activeIds(1).setFinal(true));
+            DescriptorHelper.setDiscoveryLiteDescriptor(
+                    factory1,
+                    new DiscoveryLiteDescriptorBuilder()
+                            .me(1)
+                            .seq(1)
+                            .activeIds(1)
+                            .setFinal(true));
             assertTrue(idMapService1.waitForInit(5000));
             cs.triggerBackgroundCheck();
             assertEquals(0, vsm.waitForAsyncEvents(1000));
@@ -263,14 +315,20 @@ public class TestOakSyncTokenService {
 
         {
             // simulate a new instance coming up - first it will show up in oak leases/lite-view
-            DescriptorHelper.setDiscoveryLiteDescriptor(factory1, new DiscoveryLiteDescriptorBuilder().me(1).seq(2).activeIds(1, 2).setFinal(true));
+            DescriptorHelper.setDiscoveryLiteDescriptor(
+                    factory1,
+                    new DiscoveryLiteDescriptorBuilder()
+                            .me(1)
+                            .seq(2)
+                            .activeIds(1, 2)
+                            .setFinal(true));
 
             // the view is still the same (only contains slingId1) - but it has the flag 'partial' set
             final String syncToken2 = "s2";
             final String clusterId = view1.getLocalInstance().getClusterView().getId();
             final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2);
-            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2)
-                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            final DummyTopologyView view1Suppressed =
+                    new DummyTopologyView(syncToken2).addInstance(slingId1, cluster1Suppressed, true, true);
             cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(2));
 
             vsm.handleNewView(view1Suppressed);
@@ -283,7 +341,13 @@ public class TestOakSyncTokenService {
             // now define slingId for activeId == 2
             IdMapService idMapService2 = IdMapService.testConstructor(
                     new SimpleCommonsConfig(), new DummySlingSettingsService(slingId2), factory2);
-            DescriptorHelper.setDiscoveryLiteDescriptor(factory2, new DiscoveryLiteDescriptorBuilder().setFinal(true).me(2).seq(2).activeIds(1, 2));
+            DescriptorHelper.setDiscoveryLiteDescriptor(
+                    factory2,
+                    new DiscoveryLiteDescriptorBuilder()
+                            .setFinal(true)
+                            .me(2)
+                            .seq(2)
+                            .activeIds(1, 2));
             assertTrue(idMapService2.waitForInit(5000));
         }
         {
@@ -291,8 +355,8 @@ public class TestOakSyncTokenService {
             final String syncToken2 = "s2";
             final String clusterId = view1.getLocalInstance().getClusterView().getId();
             final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2);
-            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2)
-                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            final DummyTopologyView view1Suppressed =
+                    new DummyTopologyView(syncToken2).addInstance(slingId1, cluster1Suppressed, true, true);
             cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(2));
 
             vsm.handleNewView(view1Suppressed);

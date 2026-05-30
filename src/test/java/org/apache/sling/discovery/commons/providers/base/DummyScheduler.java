@@ -83,7 +83,7 @@ public class DummyScheduler implements Scheduler {
 
     private boolean failMode;
 
-    private Map<String,Thread> schedules = new HashMap<>();
+    private Map<String, Thread> schedules = new HashMap<>();
 
     private boolean manageSchedules;
 
@@ -96,20 +96,32 @@ public class DummyScheduler implements Scheduler {
     }
 
     @Override
-    public void addJob(String name, Object job, Map<String, Serializable> config, String schedulingExpression,
-            boolean canRunConcurrently) throws Exception {
-        throw new IllegalStateException("not yet impl");
-    }
-
-    @Override
-    public void addPeriodicJob(String name, Object job, Map<String, Serializable> config, long period, boolean canRunConcurrently)
+    public void addJob(
+            String name,
+            Object job,
+            Map<String, Serializable> config,
+            String schedulingExpression,
+            boolean canRunConcurrently)
             throws Exception {
         throw new IllegalStateException("not yet impl");
     }
 
     @Override
-    public void addPeriodicJob(String name, Object job, Map<String, Serializable> config, long period, boolean canRunConcurrently,
-            boolean startImmediate) throws Exception {
+    public void addPeriodicJob(
+            String name, Object job, Map<String, Serializable> config, long period, boolean canRunConcurrently)
+            throws Exception {
+        throw new IllegalStateException("not yet impl");
+    }
+
+    @Override
+    public void addPeriodicJob(
+            String name,
+            Object job,
+            Map<String, Serializable> config,
+            long period,
+            boolean canRunConcurrently,
+            boolean startImmediate)
+            throws Exception {
         throw new IllegalStateException("not yet impl");
     }
 
@@ -124,7 +136,8 @@ public class DummyScheduler implements Scheduler {
     }
 
     @Override
-    public void fireJobAt(final String name, final Object job, final Map<String, Serializable> config, final Date date) throws Exception {
+    public void fireJobAt(final String name, final Object job, final Map<String, Serializable> config, final Date date)
+            throws Exception {
         if (!(job instanceof Job) && !(job instanceof Runnable)) {
             throw new IllegalArgumentException("only runnable and job supported");
         }
@@ -132,7 +145,7 @@ public class DummyScheduler implements Scheduler {
 
             @Override
             public void run() {
-                while (System.currentTimeMillis()<date.getTime()) {
+                while (System.currentTimeMillis() < date.getTime()) {
                     try {
                         Thread.sleep(10);
                     } catch (InterruptedException e) {
@@ -141,7 +154,7 @@ public class DummyScheduler implements Scheduler {
                     }
                 }
                 if (manageSchedules) {
-                    synchronized(schedules) {
+                    synchronized (schedules) {
                         if (schedules.get(name) != Thread.currentThread()) {
                             // we got unscheduled
                             System.out.println("(ignoring cancelled schedule) "
@@ -154,7 +167,7 @@ public class DummyScheduler implements Scheduler {
                     System.out.println("(running schedule) " + System.identityHashCode(Thread.currentThread()));
                 }
                 if (job instanceof Job) {
-                    Job j = (Job)job;
+                    Job j = (Job) job;
                     JobContext context = new JobContext() {
 
                         @Override
@@ -169,10 +182,9 @@ public class DummyScheduler implements Scheduler {
                     };
                     j.execute(context);
                 } else {
-                    ((Runnable)job).run();
+                    ((Runnable) job).run();
                 }
             }
-            
         };
         async(r, name);
     }
@@ -183,20 +195,21 @@ public class DummyScheduler implements Scheduler {
         }
         Thread th = new Thread(r);
         if (manageSchedules) {
-            synchronized(schedules) {
+            synchronized (schedules) {
                 Thread previousTh = schedules.put(name, th);
                 System.out.println("(added a schedule) " + System.identityHashCode(th)
-                    + " (previous = " + System.identityHashCode(previousTh) + ")"
-                    + " (size = " + schedules.size() + ")");
+                        + " (previous = " + System.identityHashCode(previousTh) + ")"
+                        + " (size = " + schedules.size() + ")");
             }
         }
-        th.setName("async test thread for "+name);
+        th.setName("async test thread for " + name);
         th.setDaemon(true);
         th.start();
     }
 
     @Override
-    public boolean fireJobAt(String name, Object job, Map<String, Serializable> config, Date date, int times, long period) {
+    public boolean fireJobAt(
+            String name, Object job, Map<String, Serializable> config, Date date, int times, long period) {
         throw new IllegalStateException("not yet impl");
     }
 
@@ -224,10 +237,10 @@ public class DummyScheduler implements Scheduler {
     public boolean unschedule(String jobName) {
         if (manageSchedules) {
             final Thread removed;
-            synchronized(schedules) {
+            synchronized (schedules) {
                 removed = schedules.remove(jobName);
-                System.out.println("(unscheduled) " + System.identityHashCode(removed)
-                    + " (size = " + schedules.size() + ")");
+                System.out.println(
+                        "(unscheduled) " + System.identityHashCode(removed) + " (size = " + schedules.size() + ")");
             }
             return removed != null;
         } else {
@@ -259,5 +272,4 @@ public class DummyScheduler implements Scheduler {
     public ScheduleOptions EXPR(String expression) {
         throw new IllegalStateException("not yet impl");
     }
-
 }

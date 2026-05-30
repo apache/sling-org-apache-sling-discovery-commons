@@ -18,8 +18,6 @@
  */
 package org.apache.sling.discovery.commons.providers;
 
-import static org.junit.Assert.assertTrue;
-
 import java.util.Set;
 
 import org.apache.sling.discovery.ClusterView;
@@ -27,38 +25,40 @@ import org.apache.sling.discovery.InstanceDescription;
 import org.apache.sling.discovery.InstanceFilter;
 import org.junit.Test;
 
+import static org.junit.Assert.assertTrue;
+
 public class BaseTopologyViewTest {
 
     BaseTopologyView newView() {
         return new BaseTopologyView() {
-            
+
             @Override
             public InstanceDescription getLocalInstance() {
                 throw new IllegalStateException("not yet impl");
             }
-            
+
             @Override
             public Set<InstanceDescription> getInstances() {
                 throw new IllegalStateException("not yet impl");
             }
-            
+
             @Override
             public Set<ClusterView> getClusterViews() {
                 throw new IllegalStateException("not yet impl");
             }
-            
+
             @Override
             public Set<InstanceDescription> findInstances(InstanceFilter filter) {
                 throw new IllegalStateException("not yet impl");
             }
-            
+
             @Override
             public String getLocalClusterSyncTokenId() {
                 throw new IllegalStateException("not yet impl");
             }
         };
     }
-    
+
     @Test
     public void testCurrent() throws Exception {
         BaseTopologyView view = newView();

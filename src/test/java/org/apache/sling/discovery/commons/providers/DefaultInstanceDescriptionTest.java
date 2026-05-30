@@ -18,14 +18,14 @@
  */
 package org.apache.sling.discovery.commons.providers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class DefaultInstanceDescriptionTest {
 
@@ -39,8 +39,7 @@ public class DefaultInstanceDescriptionTest {
         final String theSlingId = null;
         final Map<String, String> properties = null;
         try {
-            constructInstanceDescription(clusterView, isLeader, isOwn,
-                    theSlingId, properties);
+            constructInstanceDescription(clusterView, isLeader, isOwn, theSlingId, properties);
             fail("should have thrown an exception");
         } catch (Exception e) {
             // ok
@@ -52,59 +51,52 @@ public class DefaultInstanceDescriptionTest {
             // ok
         }
         try {
-            constructInstanceDescription(null, false, false, slingId, null)
-                    .setClusterView(null);
+            constructInstanceDescription(null, false, false, slingId, null).setClusterView(null);
             fail("should have thrown an exception");
         } catch (Exception e) {
             // ok
         }
         try {
-            constructInstanceDescription(null, false, false, slingId, null)
-                    .setProperties(null);
+            constructInstanceDescription(null, false, false, slingId, null).setProperties(null);
             fail("should have thrown an exception");
         } catch (Exception e) {
             // ok
         }
-        DefaultInstanceDescription id = constructInstanceDescription(null,
-                false, false, slingId, null);
-        id.setClusterView(new DefaultClusterView(UUID.randomUUID()
-                .toString()));
+        DefaultInstanceDescription id = constructInstanceDescription(null, false, false, slingId, null);
+        id.setClusterView(new DefaultClusterView(UUID.randomUUID().toString()));
         try {
-            id.setClusterView(new DefaultClusterView(UUID.randomUUID()
-                    .toString()));
+            id.setClusterView(new DefaultClusterView(UUID.randomUUID().toString()));
             fail("should have thrown an exception");
         } catch (Exception e) {
             // ok
         }
 
-        assertEquals(slingId,
-                constructInstanceDescription(null, false, false, slingId, null)
-                        .getSlingId());
-        assertEquals(true,
-                constructInstanceDescription(null, true, false, slingId, null)
-                        .isLeader());
-        assertEquals(false,
-                constructInstanceDescription(null, false, false, slingId, null)
-                        .isLeader());
-        assertEquals(false,
-                constructInstanceDescription(null, false, false, slingId, null)
-                        .isLocal());
-
+        assertEquals(
+                slingId,
+                constructInstanceDescription(null, false, false, slingId, null).getSlingId());
+        assertEquals(
+                true,
+                constructInstanceDescription(null, true, false, slingId, null).isLeader());
+        assertEquals(
+                false,
+                constructInstanceDescription(null, false, false, slingId, null).isLeader());
+        assertEquals(
+                false,
+                constructInstanceDescription(null, false, false, slingId, null).isLocal());
     }
 
     @Test
     public void testNotOwnInstance() throws Exception {
         final String slingId = UUID.randomUUID().toString();
-        assertEquals(true,
-                constructInstanceDescription(null, false, true, slingId, null)
-                        .isLocal());
+        assertEquals(
+                true,
+                constructInstanceDescription(null, false, true, slingId, null).isLocal());
     }
 
     @Test
     public void testPropertiesSetting() throws Exception {
         String slingId = UUID.randomUUID().toString();
-        DefaultInstanceDescription id = constructInstanceDescription(null,
-                false, false, slingId, null);
+        DefaultInstanceDescription id = constructInstanceDescription(null, false, false, slingId, null);
         id.setProperties(new HashMap<String, String>());
         // it is actually ok to set the properties multiple times...
         id.setProperties(new HashMap<String, String>());
@@ -113,10 +105,12 @@ public class DefaultInstanceDescriptionTest {
     }
 
     public DefaultInstanceDescription constructInstanceDescription(
-            final DefaultClusterView clusterView, final boolean isLeader,
-            final boolean isOwn, final String theSlingId,
-            final Map<String, String> properties) throws Exception {
-        return new DefaultInstanceDescription(clusterView, isLeader, isOwn,
-                theSlingId, properties);
+            final DefaultClusterView clusterView,
+            final boolean isLeader,
+            final boolean isOwn,
+            final String theSlingId,
+            final Map<String, String> properties)
+            throws Exception {
+        return new DefaultInstanceDescription(clusterView, isLeader, isOwn, theSlingId, properties);
     }
 }

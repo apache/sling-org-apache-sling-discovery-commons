@@ -36,19 +36,18 @@ public interface ViewStateManager {
      * delays sending TOPOLOGY_CHANGED event after receiving a handleNewView - with the
      * idea as to limit the number of toggling between view states.
      */
-    void installMinEventDelayHandler(DiscoveryService discoveryService, Scheduler scheduler, 
-            long minEventDelaySecs);
-    
-    /** 
+    void installMinEventDelayHandler(DiscoveryService discoveryService, Scheduler scheduler, long minEventDelaySecs);
+
+    /**
      * Binds the given eventListener, sending it an INIT event if applicable.
      * @param eventListener the eventListener that is to bind
      */
     void bind(TopologyEventListener eventListener);
 
-    /** 
+    /**
      * Unbinds the given eventListener, returning whether or not it was bound at all.
      * @param eventListener the eventListner that is to unbind
-     * @return whether or not the listener was added in the first place 
+     * @return whether or not the listener was added in the first place
      */
     boolean unbind(TopologyEventListener eventListener);
 
@@ -60,7 +59,7 @@ public interface ViewStateManager {
      */
     void handleActivated();
 
-    /** 
+    /**
      * Must be called when the corresponding service (typically a DiscoveryService implementation)
      * is deactivated.
      * <p>
@@ -80,22 +79,21 @@ public interface ViewStateManager {
     /**
      * Handles the fact that a new view became true/established and sends out
      * TOPOLOGY_INIT to uninitialized listeners and TOPOLOGY_CHANGED to already initialized
-     * listeners (in the latter case, also sends a TOPOLOGY_CHANGING if that has not yet been 
+     * listeners (in the latter case, also sends a TOPOLOGY_CHANGING if that has not yet been
      * done)
      * @param newView the new, established view
      * true if we were either in changing mode or the newView was different from the previous one.
      */
     void handleNewView(BaseTopologyView newView);
 
-    /** 
-     * for testing only: wait for any potentially queued async events to be delivered 
+    /**
+     * for testing only: wait for any potentially queued async events to be delivered
      * before returning.
      * <p>
-     * @param timeout time in millis to wait for at max - 0 to not wait at all - -1 
+     * @param timeout time in millis to wait for at max - 0 to not wait at all - -1
      * to wait indefinitely
      * @return 0 if no more async events exist, or the number of queued or in-flight (being sent)
      * events if the timeout hit early
      */
     int waitForAsyncEvents(long timeout);
-
 }

@@ -53,19 +53,18 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  * pair to the repository and given all other instances in the cluster
  * do the same can map clusterNodeIds to slingIds (or vice-versa)
  */
-@Component(service = { IdMapService.class },
-    property = {
-            Constants.SERVICE_VENDOR + "=The Apache Software Foundation"
-    })
+@Component(
+        service = {IdMapService.class},
+        property = {Constants.SERVICE_VENDOR + "=The Apache Software Foundation"})
 public class IdMapService extends AbstractServiceWithBackgroundCheck implements ResourceChangeListener {
 
-    @Reference(policyOption=ReferencePolicyOption.GREEDY)
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private ResourceResolverFactory resourceResolverFactory;
 
-    @Reference(policyOption=ReferencePolicyOption.GREEDY)
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private SlingSettingsService settingsService;
 
-    @Reference(policyOption=ReferencePolicyOption.GREEDY)
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     private DiscoveryLiteConfig commonsConfig;
 
     private boolean initialized = false;
@@ -101,18 +100,23 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
         this.bundleContext = bundleContext;
         registerEventHandler();
 
-        startBackgroundCheck("IdMapService-initializer", new BackgroundCheck() {
+        startBackgroundCheck(
+                "IdMapService-initializer",
+                new BackgroundCheck() {
 
-            @Override
-            public boolean check() {
-                try {
-                    return init();
-                } catch (Exception e) {
-                    logger.error("initializer: could not init due to "+e, e);
-                    return false;
-                }
-            }
-        }, null, -1, 1000 /* = 1sec interval */);
+                    @Override
+                    public boolean check() {
+                        try {
+                            return init();
+                        } catch (Exception e) {
+                            logger.error("initializer: could not init due to " + e, e);
+                            return false;
+                        }
+                    }
+                },
+                null,
+                -1,
+                1000 /* = 1sec interval */);
     }
 
     @Deactivate
@@ -130,13 +134,11 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
             logger.info("registerEventHandler: bundleContext is null - cannot register");
             return;
         }
-        Dictionary<String,Object> properties = new Hashtable<>();
+        Dictionary<String, Object> properties = new Hashtable<>();
         properties.put(Constants.SERVICE_DESCRIPTION, "IdMap Change Listener.");
         properties.put(Constants.SERVICE_VENDOR, "The Apache Software Foundation");
-        String[] topics = new String[] {
-                ChangeType.ADDED.toString(),
-                ChangeType.CHANGED.toString(),
-                ChangeType.REMOVED.toString()
+        String[] topics =
+                new String[] {ChangeType.ADDED.toString(), ChangeType.CHANGED.toString(), ChangeType.REMOVED.toString()
                 };
         properties.put(ResourceChangeListener.CHANGES, topics);
         properties.put(ResourceChangeListener.PATHS, getIdMapPath());
@@ -159,11 +161,11 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
     /** for testing only **/
     public synchronized boolean waitForInit(long timeout) {
         long start = System.currentTimeMillis();
-        while(!initialized && timeout != 0) {
+        while (!initialized && timeout != 0) {
             try {
-                if (timeout>0) {
-                    long diff = (start+timeout) - System.currentTimeMillis();
-                    if (diff<=0) {
+                if (timeout > 0) {
+                    long diff = (start + timeout) - System.currentTimeMillis();
+                    if (diff <= 0) {
                         return false;
                     }
                     wait(diff);
@@ -187,10 +189,9 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
         }
         slingId = settingsService.getSlingId();
         ResourceResolver resourceResolver = null;
-        try{
+        try {
             resourceResolver = getResourceResolver();
-            DiscoveryLiteDescriptor descriptor =
-                    DiscoveryLiteDescriptor.getDescriptorFrom(resourceResolver);
+            DiscoveryLiteDescriptor descriptor = DiscoveryLiteDescriptor.getDescriptorFrom(resourceResolver);
             long me = descriptor.getMyId();
             final Resource resource = ResourceHelper.getOrCreateResource(resourceResolver, getIdMapPath());
             ModifiableValueMap idmap = resource.adaptTo(ModifiableValueMap.class);
@@ -201,8 +202,8 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
             for (String aKey : new HashSet<>(idmap.keySet())) {
                 Object value = idmap.get(aKey);
                 if (value instanceof Number) {
-                    Number n = (Number)value;
-                    if (n.longValue()==me) {
+                    Number n = (Number) value;
+                    if (n.longValue() == me) {
                         // my clusterNodeId is already mapped to
                         // let's check if the key is my slingId
                         if (aKey.equals(slingId)) {
@@ -210,12 +211,16 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
                             foundMe = true;
                         } else {
                             // cleanup necessary
-                            logger.info("init: my clusterNodeId is already mapped to by another slingId, deleting entry: key="+aKey+" mapped to "+value);
+                            logger.info(
+                                    "init: my clusterNodeId is already mapped to by another slingId, deleting entry: key="
+                                            + aKey + " mapped to " + value);
                             idmap.remove(aKey);
                         }
                     } else if (aKey.equals(slingId)) {
                         // cleanup necessary
-                        logger.info("init: my slingId is already mapped to by another clusterNodeId, deleting entry: key="+aKey+" mapped to "+value);
+                        logger.info(
+                                "init: my slingId is already mapped to by another clusterNodeId, deleting entry: key="
+                                        + aKey + " mapped to " + value);
                         idmap.remove(aKey);
                     } else {
                         // that's just some other slingId-clusterNodeId mapping
@@ -224,25 +229,25 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
                 }
             }
             if (!foundMe) {
-                logger.info("init: added the following mapping: slingId="+slingId+" to discovery-lite id="+me);
+                logger.info("init: added the following mapping: slingId=" + slingId + " to discovery-lite id=" + me);
                 idmap.put(slingId, me);
             } else {
-                logger.info("init: mapping already existed, left unchanged: slingId="+slingId+" to discovery-lite id="+me);
+                logger.info("init: mapping already existed, left unchanged: slingId=" + slingId
+                        + " to discovery-lite id=" + me);
             }
             resourceResolver.commit();
             this.me = me;
             initialized = true;
             notifyAll();
             return true;
-        } catch(Exception e) {
-            logger.info("init: init failed: "+e);
+        } catch (Exception e) {
+            logger.info("init: init failed: " + e);
             return false;
         } finally {
-            if (resourceResolver!=null) {
+            if (resourceResolver != null) {
                 resourceResolver.close();
             }
         }
-
     }
 
     public synchronized void clearCache() {
@@ -257,7 +262,8 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
         lastCacheInvalidation = System.currentTimeMillis();
     }
 
-    public synchronized String toSlingId(int clusterNodeId, ResourceResolver resourceResolver) throws PersistenceException {
+    public synchronized String toSlingId(int clusterNodeId, ResourceResolver resourceResolver)
+            throws PersistenceException {
         if (System.currentTimeMillis() - lastCacheInvalidation > 30000) {
             // since upon a restart of an instance it could opt to have changed
             // the slingId, we might not be able to catch that change if we
@@ -271,7 +277,7 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
             clearCache();
         }
         String slingId = idMapCache.get(clusterNodeId);
-        if (slingId!=null) {
+        if (slingId != null) {
             // cache-hit
             return slingId;
         }
@@ -282,16 +288,19 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
         for (Entry<Integer, String> newEntry : newEntries) {
             String oldValue = oldIdMapCache.get(newEntry.getKey());
             if (oldValue == null || !oldValue.equals(newEntry.getValue())) {
-                logger.info("toSlingId: mapping for "+newEntry.getKey()+" to "+newEntry.getValue() + " was newly added.");
+                logger.info("toSlingId: mapping for " + newEntry.getKey() + " to " + newEntry.getValue()
+                        + " was newly added.");
             } else if (!oldValue.equals(newEntry.getValue())) {
-                logger.info("toSlingId: mapping for "+newEntry.getKey()+" changed from "+oldValue+" to "+newEntry.getValue());
+                logger.info("toSlingId: mapping for " + newEntry.getKey() + " changed from " + oldValue + " to "
+                        + newEntry.getValue());
             }
             idMapCache.put(newEntry.getKey(), newEntry.getValue());
         }
         Set<Entry<Integer, String>> oldEntries = oldIdMapCache.entrySet();
         for (Entry<Integer, String> oldEntry : oldEntries) {
             if (!idMapCache.containsKey(oldEntry.getKey())) {
-                logger.info("toSlingId: mapping for "+oldEntry.getKey()+" to "+oldEntry.getValue()+" disappeared.");
+                logger.info(
+                        "toSlingId: mapping for " + oldEntry.getKey() + " to " + oldEntry.getValue() + " disappeared.");
             }
         }
 
@@ -305,7 +314,7 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
         for (String slingId : idmapValueMap.keySet()) {
             Object value = idmapValueMap.get(slingId);
             if (value instanceof Number) {
-                Number number = (Number)value;
+                Number number = (Number) value;
                 idmap.put(number.intValue(), slingId);
             }
         }
@@ -324,5 +333,4 @@ public class IdMapService extends AbstractServiceWithBackgroundCheck implements 
         logger.debug("onChange: got notified of changes, clearing cache.");
         clearCache();
     }
-
 }

@@ -22,10 +22,9 @@ public class PropertyNameHelper {
 
     /** SLING-2883 : properly test for valid property names **/
     public static boolean isValidPropertyName(String name) {
-        if (name==null || name.length()==0) {
+        if (name == null || name.length() == 0) {
             return false;
         }
         return name.matches("[a-zA-Z0-9._-]+");
     }
-
 }

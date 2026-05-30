@@ -26,12 +26,14 @@ public class NonLocalInstanceDescriptionTest extends DefaultInstanceDescriptionT
 
     @Override
     public DefaultInstanceDescription constructInstanceDescription(
-            DefaultClusterView clusterView, boolean isLeader,
-            boolean isOwn, String theSlingId, Map<String, String> properties)
+            DefaultClusterView clusterView,
+            boolean isLeader,
+            boolean isOwn,
+            String theSlingId,
+            Map<String, String> properties)
             throws Exception {
 
-        return new NonLocalInstanceDescription(clusterView, isLeader,
-                theSlingId, properties);
+        return new NonLocalInstanceDescription(clusterView, isLeader, theSlingId, properties);
     }
 
     @Override
@@ -39,5 +41,4 @@ public class NonLocalInstanceDescriptionTest extends DefaultInstanceDescriptionT
     public void testNotOwnInstance() throws Exception {
         // exclude that one - since incoming instancedescription is always !own!
     }
-
 }

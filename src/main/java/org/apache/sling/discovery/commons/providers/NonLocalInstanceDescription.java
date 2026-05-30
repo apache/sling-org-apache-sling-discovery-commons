@@ -20,19 +20,18 @@ package org.apache.sling.discovery.commons.providers;
 
 import java.util.Map;
 
-import org.apache.sling.discovery.commons.providers.DefaultClusterView;
-import org.apache.sling.discovery.commons.providers.DefaultInstanceDescription;
-
 /**
  * InstanceDescription which represents an instance that is explicitly
  * not local, ie isOwn==false.
  */
 public class NonLocalInstanceDescription extends DefaultInstanceDescription {
 
-    public NonLocalInstanceDescription(final DefaultClusterView cluster,
-            final boolean isLeader, final String slingId, final Map<String, String> properties) {
+    public NonLocalInstanceDescription(
+            final DefaultClusterView cluster,
+            final boolean isLeader,
+            final String slingId,
+            final Map<String, String> properties) {
         // isOwn==false
         super(cluster, isLeader, false, slingId, properties);
     }
-
 }

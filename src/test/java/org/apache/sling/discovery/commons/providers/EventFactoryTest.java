@@ -18,39 +18,39 @@
  */
 package org.apache.sling.discovery.commons.providers;
 
-import static org.junit.Assert.fail;
-
 import org.junit.Test;
+
+import static org.junit.Assert.fail;
 
 public class EventFactoryTest {
 
     BaseTopologyView newView() {
         return new DummyTopologyView();
     }
-    
+
     @Test
     public void testInitEvent() throws Exception {
-        try{
+        try {
             EventHelper.newInitEvent(null);
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
         EventHelper.newInitEvent(newView());
     }
-    
+
     @Test
     public void testChangingEvent() throws Exception {
-        try{
+        try {
             EventHelper.newChangingEvent(null);
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
-        try{
+        try {
             EventHelper.newChangingEvent(newView());
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
         BaseTopologyView view = newView();
@@ -60,28 +60,28 @@ public class EventFactoryTest {
 
     @Test
     public void testChangedEvent() throws Exception {
-        try{
+        try {
             EventHelper.newChangedEvent(null, null);
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
-        try{
+        try {
             EventHelper.newChangedEvent(newView(), null);
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
-        try{
+        try {
             EventHelper.newChangedEvent(null, newView());
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
-        try{
+        try {
             EventHelper.newChangedEvent(newView(), newView());
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
         BaseTopologyView oldView = newView();
@@ -89,31 +89,31 @@ public class EventFactoryTest {
         BaseTopologyView newView = newView();
         EventHelper.newChangedEvent(oldView, newView);
     }
-    
+
     @Test
     public void testPropertiesEvent() throws Exception {
-        try{
+        try {
             EventHelper.newPropertiesChangedEvent(null, null);
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
-        try{
+        try {
             EventHelper.newPropertiesChangedEvent(newView(), null);
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
-        try{
+        try {
             EventHelper.newPropertiesChangedEvent(null, newView());
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
-        try{
+        try {
             EventHelper.newPropertiesChangedEvent(newView(), newView());
             fail("should complain");
-        } catch(Exception e) {
+        } catch (Exception e) {
             // ok
         }
         BaseTopologyView oldView = newView();

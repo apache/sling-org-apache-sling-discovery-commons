@@ -53,8 +53,11 @@ public class DefaultInstanceDescription implements InstanceDescription {
     /** the properties of this instance **/
     private Map<String, String> properties;
 
-    public DefaultInstanceDescription(final DefaultClusterView clusterView,
-            final boolean isLeader, final boolean isOwn, final String slingId,
+    public DefaultInstanceDescription(
+            final DefaultClusterView clusterView,
+            final boolean isLeader,
+            final boolean isOwn,
+            final String slingId,
             final Map<String, String> properties) {
         // slingId must not be null - clusterView and properties can be null though
         if (slingId == null || slingId.length() == 0) {
@@ -67,22 +70,21 @@ public class DefaultInstanceDescription implements InstanceDescription {
         if (clusterView != null) {
             clusterView.addInstanceDescription(this);
             if (this.clusterView == null) {
-                throw new IllegalStateException(
-                        "clusterView should have been set by now");
+                throw new IllegalStateException("clusterView should have been set by now");
             }
         }
     }
 
     @Override
     public String toString() {
-    	final String clusterInfo;
-    	if (clusterView==null) {
-    		clusterInfo = "";
-    	} else {
-    		clusterInfo = ", clusterViewId="+clusterView.getId();
-    	}
-        return "an InstanceDescription[slindId=" + slingId + ", isLeader="
-                + isLeader + ", isOwn=" + isLocal + clusterInfo + ", properties=" + this.properties + "]";
+        final String clusterInfo;
+        if (clusterView == null) {
+            clusterInfo = "";
+        } else {
+            clusterInfo = ", clusterViewId=" + clusterView.getId();
+        }
+        return "an InstanceDescription[slindId=" + slingId + ", isLeader=" + isLeader + ", isOwn=" + isLocal
+                + clusterInfo + ", properties=" + this.properties + "]";
     }
 
     @Override
@@ -105,8 +107,7 @@ public class DefaultInstanceDescription implements InstanceDescription {
         if (!properties.equals(other.properties)) {
             return false;
         }
-        if (!this.getClusterView().getId()
-                .equals(other.getClusterView().getId())) {
+        if (!this.getClusterView().getId().equals(other.getClusterView().getId())) {
             return false;
         }
         return true;
@@ -158,7 +159,7 @@ public class DefaultInstanceDescription implements InstanceDescription {
         }
         return Collections.unmodifiableMap(properties);
     }
-    
+
     /**
      * Sets the properties of this instance
      * @param properties
@@ -171,28 +172,27 @@ public class DefaultInstanceDescription implements InstanceDescription {
     }
 
     /** SLING-2883 : filter (pass-through) valid properties only **/
-	private Map<String, String> filterValidProperties(
-			Map<String, String> rawProps) {
-		if (rawProps==null) {
-			return null;
-		}
+    private Map<String, String> filterValidProperties(Map<String, String> rawProps) {
+        if (rawProps == null) {
+            return null;
+        }
 
-		final HashMap<String, String> filteredProps = new HashMap<String, String>();
-		final Set<Entry<String, String>> entries = rawProps.entrySet();
-		final Iterator<Entry<String, String>> it = entries.iterator();
-		while(it.hasNext()) {
-			final Entry<String, String> anEntry = it.next();
-			if (PropertyNameHelper.isValidPropertyName(anEntry.getKey())) {
-				filteredProps.put(anEntry.getKey(), anEntry.getValue());
-			}
-		}
-		return filteredProps;
-	}
+        final HashMap<String, String> filteredProps = new HashMap<String, String>();
+        final Set<Entry<String, String>> entries = rawProps.entrySet();
+        final Iterator<Entry<String, String>> it = entries.iterator();
+        while (it.hasNext()) {
+            final Entry<String, String> anEntry = it.next();
+            if (PropertyNameHelper.isValidPropertyName(anEntry.getKey())) {
+                filteredProps.put(anEntry.getKey(), anEntry.getValue());
+            }
+        }
+        return filteredProps;
+    }
 
-	/** for testing only! **/
+    /** for testing only! **/
     public void setProperty(String key, String value) {
         if (!PropertyNameHelper.isValidPropertyName(key)) {
-            throw new IllegalArgumentException("key is not a valid property name: "+key);
+            throw new IllegalArgumentException("key is not a valid property name: " + key);
         }
         if (properties == null) {
             properties = new HashMap<String, String>();

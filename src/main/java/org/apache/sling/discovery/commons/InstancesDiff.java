@@ -131,7 +131,8 @@ public final class InstancesDiff {
      * @param <T> the type of instance which must extend {@code InstanceDescription}.
      * @throws IllegalArgumentException if either of the collections contains duplicated Sling identifiers.
      */
-    public <T extends InstanceDescription> InstancesDiff(@NotNull Collection<T> oldInstances, @NotNull Collection<T> newInstances) {
+    public <T extends InstanceDescription> InstancesDiff(
+            @NotNull Collection<T> oldInstances, @NotNull Collection<T> newInstances) {
         this.newInstances = getInstancesMap(newInstances);
         this.oldInstances = getInstancesMap(oldInstances);
     }
@@ -244,15 +245,16 @@ public final class InstancesDiff {
     }
 
     @NotNull
-    private Map<String, InstanceDescription> partitionRetained(boolean retainFromNewCollection, boolean propertyChanged) {
+    private Map<String, InstanceDescription> partitionRetained(
+            boolean retainFromNewCollection, boolean propertyChanged) {
         Map<String, InstanceDescription> partition = new HashMap<String, InstanceDescription>();
         for (Map.Entry<String, InstanceDescription> oldEntry : oldInstances.entrySet()) {
             String slingId = oldEntry.getKey();
             InstanceDescription newDescription = newInstances.get(slingId);
-            if(newDescription != null) {
+            if (newDescription != null) {
                 InstanceDescription oldDescription = oldEntry.getValue();
                 boolean propertiesSame = newDescription.getProperties().equals(oldDescription.getProperties());
-                if ((propertiesSame && ! propertyChanged) || (! propertiesSame && propertyChanged)) {
+                if ((propertiesSame && !propertyChanged) || (!propertiesSame && propertyChanged)) {
                     partition.put(slingId, retainFromNewCollection ? newDescription : oldDescription);
                 }
             }
@@ -279,13 +281,15 @@ public final class InstancesDiff {
     }
 
     @NotNull
-    private static <T extends InstanceDescription> Map<String, InstanceDescription> getInstancesMap(@NotNull Collection<T> instances) {
+    private static <T extends InstanceDescription> Map<String, InstanceDescription> getInstancesMap(
+            @NotNull Collection<T> instances) {
         Map<String, InstanceDescription> instancesMap = new HashMap<String, InstanceDescription>();
         for (InstanceDescription instance : instances) {
             String slingId = instance.getSlingId();
             if (slingId != null) {
                 if (instancesMap.put(slingId, instance) != null) {
-                    throw new IllegalArgumentException(String.format("Duplicated instance found for slingId: %s", slingId));
+                    throw new IllegalArgumentException(
+                            String.format("Duplicated instance found for slingId: %s", slingId));
                 }
             }
         }
@@ -301,7 +305,7 @@ public final class InstancesDiff {
         }
 
         public boolean accept(InstanceDescription instance) {
-            return ! filter.accept(instance);
+            return !filter.accept(instance);
         }
     }
 
@@ -469,11 +473,12 @@ public final class InstancesDiff {
 
         @NotNull
         private Collection<InstanceDescription> applyFilters() {
-            Iterator<Map.Entry<String, InstanceDescription>> entries = instances.entrySet().iterator();
-            for ( ; entries.hasNext() ; ) {
+            Iterator<Map.Entry<String, InstanceDescription>> entries =
+                    instances.entrySet().iterator();
+            for (; entries.hasNext(); ) {
                 Map.Entry<String, InstanceDescription> entry = entries.next();
                 for (InstanceFilter filter : filters) {
-                    if (! filter.accept(entry.getValue())) {
+                    if (!filter.accept(entry.getValue())) {
                         entries.remove();
                         break;
                     }

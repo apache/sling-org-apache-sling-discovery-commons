@@ -29,10 +29,9 @@ public class DummyDiscoveryService implements DiscoveryService {
     public void setTopoology(BaseTopologyView topologyView) {
         this.topologyView = topologyView;
     }
-    
+
     @Override
     public TopologyView getTopology() {
         return topologyView;
     }
-
 }

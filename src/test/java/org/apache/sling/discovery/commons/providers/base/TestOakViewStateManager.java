@@ -18,14 +18,11 @@
  */
 package org.apache.sling.discovery.commons.providers.base;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.locks.ReentrantLock;
 
+import ch.qos.logback.classic.Level;
 import org.apache.sling.api.resource.ResourceResolverFactory;
 import org.apache.sling.commons.scheduler.Scheduler;
 import org.apache.sling.discovery.DiscoveryService;
@@ -49,7 +46,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.Level;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestOakViewStateManager implements DiscoveryService {
 
@@ -57,7 +56,7 @@ public class TestOakViewStateManager implements DiscoveryService {
 
     @Rule
     public final SlingContext context1 = new SlingContext();
-    
+
     @Rule
     public final SlingContext context2 = new SlingContext();
 
@@ -67,6 +66,7 @@ public class TestOakViewStateManager implements DiscoveryService {
 
     @SuppressWarnings("unused")
     private IdMapService idMapService1;
+
     private String slingId1;
 
     private Scheduler scheduler;
@@ -88,12 +88,15 @@ public class TestOakViewStateManager implements DiscoveryService {
                 // nothing to cancel, we're auto-run
             }
         });
-        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.sling.discovery");
         logLevel = discoveryLogger.getLevel();
         discoveryLogger.setLevel(Level.INFO);
-        
+
         slingId1 = UUID.randomUUID().toString();
-        idMapService1 = IdMapService.testConstructor(new SimpleCommonsConfig(), new DummySlingSettingsService(slingId1),
+        idMapService1 = IdMapService.testConstructor(
+                new SimpleCommonsConfig(),
+                new DummySlingSettingsService(slingId1),
                 context1.getService(ResourceResolverFactory.class));
         scheduler = new DummyScheduler();
         logger.info("setup: end");
@@ -107,7 +110,8 @@ public class TestOakViewStateManager implements DiscoveryService {
             mgr.handleDeactivated();
         }
         mgr = null;
-        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(logLevel);
         logger.info("teardown: end");
     }
@@ -149,13 +153,17 @@ public class TestOakViewStateManager implements DiscoveryService {
         final String slingId2 = UUID.randomUUID().toString();
         final String slingId3 = UUID.randomUUID().toString();
         final String clusterId = UUID.randomUUID().toString();
-        final DummyTopologyView view0 = new DummyTopologyView().addInstance(slingId1, new DefaultClusterView(clusterId), true, true);
+        final DummyTopologyView view0 =
+                new DummyTopologyView().addInstance(slingId1, new DefaultClusterView(clusterId), true, true);
         final DefaultClusterView cluster = new DefaultClusterView(clusterId);
-        final DummyTopologyView view1 = new DummyTopologyView().addInstance(slingId1, cluster, true, true)
-                .addInstance(slingId2, cluster, false, false).addInstance(slingId3, cluster, false, false);
-//        final DummyTopologyView view2 = DummyTopologyView.clone(view1).removeInstance(slingId2);
-//        final DummyTopologyView view3 = DummyTopologyView.clone(view1).removeInstance(slingId2).removeInstance(slingId3);
-//        DummyTopologyView view1Cloned = DummyTopologyView.clone(view1);
+        final DummyTopologyView view1 = new DummyTopologyView()
+                .addInstance(slingId1, cluster, true, true)
+                .addInstance(slingId2, cluster, false, false)
+                .addInstance(slingId3, cluster, false, false);
+        //        final DummyTopologyView view2 = DummyTopologyView.clone(view1).removeInstance(slingId2);
+        //        final DummyTopologyView view3 =
+        // DummyTopologyView.clone(view1).removeInstance(slingId2).removeInstance(slingId3);
+        //        DummyTopologyView view1Cloned = DummyTopologyView.clone(view1);
 
         final DummyClusterSyncService s1 = new DummyClusterSyncService(3600000, 10, "s1");
         final DummyClusterSyncService s2 = new DummyClusterSyncService(3600000, 10, "s2");
@@ -173,14 +181,15 @@ public class TestOakViewStateManager implements DiscoveryService {
             s2.setCheckResult(true);
             this.view = view0;
             mgr.handleNewView(view0);
-            assertTrue(waitForCondition(new Callable<Boolean>() {
+            assertTrue(waitForCondition(
+                    new Callable<Boolean>() {
 
-                @Override
-                public Boolean call() throws Exception {
-                    return listener.countEvents() == 1;
-                }
-
-            }, 5000));
+                        @Override
+                        public Boolean call() throws Exception {
+                            return listener.countEvents() == 1;
+                        }
+                    },
+                    5000));
             logger.info("testSyncServiceDelayOnFirstView: second call to handleNewView");
             s1.setCheckResult(false);
             s2.setCheckResult(false);
@@ -211,7 +220,6 @@ public class TestOakViewStateManager implements DiscoveryService {
                 public void run() {
                     mgr.handleNewView(view1);
                 }
-
             });
             t.start();
             t.join(5000);

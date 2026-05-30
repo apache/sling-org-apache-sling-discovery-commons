@@ -18,9 +18,6 @@
  */
 package org.apache.sling.discovery.commons;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Date;
@@ -44,6 +41,9 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 public class TestInitDelayingTopologyEventListener {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -54,29 +54,28 @@ public class TestInitDelayingTopologyEventListener {
 
         @Override
         public void handleTopologyEvent(TopologyEvent event) {
-            synchronized(events) {
+            synchronized (events) {
                 events.add(event);
                 events.notifyAll();
             }
         }
 
         public List<TopologyEvent> getEvents() {
-            synchronized(events) {
+            synchronized (events) {
                 return events;
             }
         }
 
         public void waitForEventCnt(int cnt, long timeout) throws InterruptedException {
             final long start = System.currentTimeMillis();
-            synchronized(events) {
+            synchronized (events) {
                 while (events.size() != cnt) {
                     final long now = System.currentTimeMillis();
                     final long remaining = (start + timeout) - now;
                     if (remaining > 0) {
                         events.wait(remaining);
                     } else {
-                        fail("did not receive " + cnt + " events within " + timeout + " ms, "
-                                + "but " + events.size());
+                        fail("did not receive " + cnt + " events within " + timeout + " ms, " + "but " + events.size());
                     }
                 }
             }
@@ -84,7 +83,7 @@ public class TestInitDelayingTopologyEventListener {
 
         public void assureEventCnt(int cnt, int timeout) throws InterruptedException {
             final long start = System.currentTimeMillis();
-            synchronized(events) {
+            synchronized (events) {
                 while (events.size() == cnt) {
                     final long now = System.currentTimeMillis();
                     final long remaining = (start + timeout) - now;
@@ -95,8 +94,7 @@ public class TestInitDelayingTopologyEventListener {
                         return;
                     }
                 }
-                fail("did not receive " + cnt + " events within " + timeout + " ms, "
-                        + "but " + events.size());
+                fail("did not receive " + cnt + " events within " + timeout + " ms, " + "but " + events.size());
             }
         }
     }
@@ -112,15 +110,17 @@ public class TestInitDelayingTopologyEventListener {
 
             @Override
             public boolean schedule(final Object job, ScheduleOptions options) {
-                if ( job instanceof Runnable ) {
+                if (job instanceof Runnable) {
                     final Timer t = new Timer();
-                    t.schedule(new TimerTask() {
+                    t.schedule(
+                            new TimerTask() {
 
-                        @Override
-                        public void run() {
-                            ((Runnable)job).run();
-                        }
-                    }, 300);
+                                @Override
+                                public void run() {
+                                    ((Runnable) job).run();
+                                }
+                            },
+                            300);
                     return true;
                 }
                 return false;
@@ -133,14 +133,15 @@ public class TestInitDelayingTopologyEventListener {
             }
 
             @Override
-            public boolean fireJobAt(String name, Object job, Map<String, Serializable> config, Date date, int times,
-                    long period) {
+            public boolean fireJobAt(
+                    String name, Object job, Map<String, Serializable> config, Date date, int times, long period) {
                 // TODO Auto-generated method stub
                 return false;
             }
 
             @Override
-            public void fireJobAt(String name, Object job, Map<String, Serializable> config, Date date) throws Exception {
+            public void fireJobAt(String name, Object job, Map<String, Serializable> config, Date date)
+                    throws Exception {
                 // TODO Auto-generated method stub
 
             }
@@ -158,22 +159,34 @@ public class TestInitDelayingTopologyEventListener {
             }
 
             @Override
-            public void addPeriodicJob(String name, Object job, Map<String, Serializable> config, long period,
-                    boolean canRunConcurrently, boolean startImmediate) throws Exception {
+            public void addPeriodicJob(
+                    String name,
+                    Object job,
+                    Map<String, Serializable> config,
+                    long period,
+                    boolean canRunConcurrently,
+                    boolean startImmediate)
+                    throws Exception {
                 // TODO Auto-generated method stub
 
             }
 
             @Override
-            public void addPeriodicJob(String name, Object job, Map<String, Serializable> config, long period,
-                    boolean canRunConcurrently) throws Exception {
+            public void addPeriodicJob(
+                    String name, Object job, Map<String, Serializable> config, long period, boolean canRunConcurrently)
+                    throws Exception {
                 // TODO Auto-generated method stub
 
             }
 
             @Override
-            public void addJob(String name, Object job, Map<String, Serializable> config, String schedulingExpression,
-                    boolean canRunConcurrently) throws Exception {
+            public void addJob(
+                    String name,
+                    Object job,
+                    Map<String, Serializable> config,
+                    String schedulingExpression,
+                    boolean canRunConcurrently)
+                    throws Exception {
                 // TODO Auto-generated method stub
 
             }
@@ -220,58 +233,58 @@ public class TestInitDelayingTopologyEventListener {
             }
         };
         final Scheduler scheduler = createScheduler();
-        try{
+        try {
             new InitDelayingTopologyEventListener(-1, delegate, scheduler);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(0, delegate, scheduler);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(1, null, scheduler);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(-1, delegate, scheduler, null);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(0, delegate, scheduler, null);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(1, null, scheduler, null);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(-1, delegate, scheduler, logger);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(0, delegate, scheduler, logger);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
-        try{
+        try {
             new InitDelayingTopologyEventListener(1, null, scheduler, logger);
             fail("should complain");
-        } catch(IllegalArgumentException re) {
+        } catch (IllegalArgumentException re) {
             // ok
         }
     }
@@ -297,18 +310,18 @@ public class TestInitDelayingTopologyEventListener {
     private TopologyEvent createEvent(Type type) {
         TopologyView oldView = createView(false);
         TopologyView newView = createView(true);
-        switch(type) {
-            case TOPOLOGY_CHANGING : {
+        switch (type) {
+            case TOPOLOGY_CHANGING: {
                 return new TopologyEvent(type, oldView, null);
             }
-            case PROPERTIES_CHANGED :
-            case TOPOLOGY_CHANGED : {
+            case PROPERTIES_CHANGED:
+            case TOPOLOGY_CHANGED: {
                 return new TopologyEvent(type, oldView, newView);
             }
-            case TOPOLOGY_INIT : {
+            case TOPOLOGY_INIT: {
                 return new TopologyEvent(type, null, newView);
             }
-            default : {
+            default: {
                 throw new IllegalArgumentException("unknown type: " + type);
             }
         }
@@ -318,7 +331,8 @@ public class TestInitDelayingTopologyEventListener {
     public void testDisposing() throws Exception {
         final TestListener delegate = new TestListener();
         final Scheduler scheduler = createScheduler();
-        InitDelayingTopologyEventListener listener = new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
+        InitDelayingTopologyEventListener listener =
+                new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_INIT));
         delegate.waitForEventCnt(1, 5000);
         delegate.assureEventCnt(1, 500); // test framework testing :)
@@ -334,7 +348,8 @@ public class TestInitDelayingTopologyEventListener {
     public void testNoEvents() throws Exception {
         final TestListener delegate = new TestListener();
         final Scheduler scheduler = createScheduler();
-        InitDelayingTopologyEventListener listener = new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
+        InitDelayingTopologyEventListener listener =
+                new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
         // no events:
         delegate.assureEventCnt(0, 1500);
 
@@ -346,8 +361,8 @@ public class TestInitDelayingTopologyEventListener {
         doTestAdditionalEventsAfterInit(delegate, listener);
     }
 
-    private void doTestAdditionalEventsAfterInit(final TestListener delegate, InitDelayingTopologyEventListener listener)
-            throws InterruptedException {
+    private void doTestAdditionalEventsAfterInit(
+            final TestListener delegate, InitDelayingTopologyEventListener listener) throws InterruptedException {
         // 2nd one too
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGING));
         delegate.waitForEventCnt(2, 5000);
@@ -372,14 +387,14 @@ public class TestInitDelayingTopologyEventListener {
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGED));
         delegate.waitForEventCnt(6, 5000);
         assertEquals(delegate.getEvents().get(5).getType(), Type.TOPOLOGY_CHANGED);
-
     }
 
     @Test
     public void testChanging0() throws Exception {
         final TestListener delegate = new TestListener();
         final Scheduler scheduler = createScheduler();
-        InitDelayingTopologyEventListener listener = new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
+        InitDelayingTopologyEventListener listener =
+                new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_INIT));
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGING));
         delegate.assureEventCnt(0, 1000);
@@ -394,7 +409,8 @@ public class TestInitDelayingTopologyEventListener {
     public void testChanging1() throws Exception {
         final TestListener delegate = new TestListener();
         final Scheduler scheduler = createScheduler();
-        InitDelayingTopologyEventListener listener = new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
+        InitDelayingTopologyEventListener listener =
+                new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_INIT));
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGING));
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGED));
@@ -413,7 +429,8 @@ public class TestInitDelayingTopologyEventListener {
     public void testChanged() throws Exception {
         final TestListener delegate = new TestListener();
         final Scheduler scheduler = createScheduler();
-        InitDelayingTopologyEventListener listener = new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
+        InitDelayingTopologyEventListener listener =
+                new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_INIT));
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGING));
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGED));
@@ -427,7 +444,7 @@ public class TestInitDelayingTopologyEventListener {
     public void testProperties() throws Exception {
         final TestListener delegate = new TestListener();
         final Scheduler scheduler = createScheduler();
-        // NOTE: sometimes the 1 second startup delay didn't appear to be enough 
+        // NOTE: sometimes the 1 second startup delay didn't appear to be enough
         //   and events were not delayed as expected.
         //   Bumped the startup delay to 2 seconds for a more stable test.
         InitDelayingTopologyEventListener listener =
@@ -441,5 +458,4 @@ public class TestInitDelayingTopologyEventListener {
 
         doTestAdditionalEventsAfterInit(delegate, listener);
     }
-
 }

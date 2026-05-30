@@ -29,5 +29,4 @@ public interface AsyncEvent {
      * FIFO queue it will be invoked via this trigger() method.
      */
     void trigger();
-    
 }

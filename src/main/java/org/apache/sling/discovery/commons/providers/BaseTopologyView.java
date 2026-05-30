@@ -31,14 +31,14 @@ public abstract class BaseTopologyView implements TopologyView {
 
     /** Whether or not this topology is considered 'current' / ie currently valid **/
     private volatile boolean current = true;
-    
+
     /**
      * {@inheritDoc}
      */
     public boolean isCurrent() {
         return current;
     }
-    
+
     /**
      * Marks this view as no longer current - this typically
      * results in a TOPOLOGY_CHANGING event to be sent.
@@ -55,11 +55,11 @@ public abstract class BaseTopologyView implements TopologyView {
      * by the ClusterSyncService.
      * <p>
      * The clusterSyncId uniquely identifies each change
-     * of the local cluster for all participating instances. 
-     * That means, all participating instances know of the 
+     * of the local cluster for all participating instances.
+     * That means, all participating instances know of the
      * clusterSyncId and it is the same for all instances.
      * Whenever an instance joins/leaves the cluster, this
-     * clusterSyncId must change. 
+     * clusterSyncId must change.
      * <p>
      * Since this method returns the *local* clusterSyncId,
      * it doesn't care if a remote cluster experienced
@@ -86,7 +86,7 @@ public abstract class BaseTopologyView implements TopologyView {
     public String toShortString() {
         StringBuffer sb = new StringBuffer();
         for (InstanceDescription instance : getInstances()) {
-            if (sb.length()!=0) {
+            if (sb.length() != 0) {
                 sb.append(",");
             }
             sb.append(instance.getSlingId());
@@ -97,9 +97,9 @@ public abstract class BaseTopologyView implements TopologyView {
             sb.append(instance.isLeader());
             sb.append("]");
         }
-        return "DefaultTopologyView[current=" + isCurrent() 
-            + ", num=" + getInstances().size() 
-            + ", instances=" + sb.toString() + "]";
+        return "DefaultTopologyView[current=" + isCurrent()
+                + ", num=" + getInstances().size()
+                + ", instances=" + sb.toString() + "]";
     }
 
     /**
@@ -115,5 +115,4 @@ public abstract class BaseTopologyView implements TopologyView {
         }
         return null;
     }
-
 }

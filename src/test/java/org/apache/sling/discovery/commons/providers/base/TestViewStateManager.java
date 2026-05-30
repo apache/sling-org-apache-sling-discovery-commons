@@ -18,11 +18,6 @@
  */
 package org.apache.sling.discovery.commons.providers.base;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import ch.qos.logback.classic.Level;
 import org.apache.sling.discovery.ClusterView;
 import org.apache.sling.discovery.DiscoveryService;
 import org.apache.sling.discovery.InstanceDescription;
@@ -51,7 +47,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.Level;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestViewStateManager {
 
@@ -71,7 +70,7 @@ public class TestViewStateManager {
         public void sync(BaseTopologyView view, Runnable callback) {
             try {
                 lock.unlock();
-                try{
+                try {
                     logger.info("ClusterSyncServiceWithSemaphore.sync: acquiring lock ...");
                     semaphore.acquire();
                     logger.info("ClusterSyncServiceWithSemaphore.sync: lock acquired.");
@@ -83,16 +82,15 @@ public class TestViewStateManager {
                 e.printStackTrace();
             }
         }
-        
+
         @Override
         public void cancelSync() {
             // TODO not implemented yet
         }
-        
     }
-    
+
     protected ViewStateManagerImpl mgr;
-    
+
     private Random defaultRandom;
 
     private Level logLevel;
@@ -112,7 +110,8 @@ public class TestViewStateManager {
             }
         });
         defaultRandom = new Random(1234123412); // I want randomness yes, but deterministic, for some methods at least
-        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.sling.discovery");
         logLevel = discoveryLogger.getLevel();
         discoveryLogger.setLevel(Level.INFO);
     }
@@ -124,32 +123,36 @@ public class TestViewStateManager {
             mgr.handleDeactivated();
         }
         mgr = null;
-        defaultRandom= null;
-        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
+        defaultRandom = null;
+        final ch.qos.logback.classic.Logger discoveryLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(logLevel);
     }
-    
+
     void assertEvents(DummyListener listener, TopologyEvent... events) {
         TestHelper.assertEvents(mgr, listener, events);
     }
-    
+
     /** does couple loops randomly calling handleChanging() (or not) and then handleNewView().
-     * Note: random is passed to allow customizing and not hardcoding this method to a particular random 
+     * Note: random is passed to allow customizing and not hardcoding this method to a particular random
      * @throws InterruptedException **/
     protected void randomEventLoop(final Random random, DummyListener... listeners) throws InterruptedException {
         TestHelper.randomEventLoop(mgr, null, 5, -1, random, listeners);
     }
-    
+
     @Test
     public void testChangedPropertiesChanged() throws Exception {
         final DummyListener listener = new DummyListener();
-        mgr.installMinEventDelayHandler(new DiscoveryService() {
-            
-            @Override
-            public TopologyView getTopology() {
-                throw new IllegalStateException("not yet impl");
-            }
-        }, new DummyScheduler(), 1);
+        mgr.installMinEventDelayHandler(
+                new DiscoveryService() {
+
+                    @Override
+                    public TopologyView getTopology() {
+                        throw new IllegalStateException("not yet impl");
+                    }
+                },
+                new DummyScheduler(),
+                1);
         mgr.handleActivated();
         TestHelper.assertNoEvents(listener);
         mgr.bind(listener);
@@ -162,7 +165,8 @@ public class TestViewStateManager {
         mgr.handleNewView(view1);
         assertEvents(listener, EventHelper.newInitEvent(view1));
         DefaultClusterView cluster2 = new DefaultClusterView(new String(cluster1.getId()));
-        final BaseTopologyView view2 = new DummyTopologyView(view1.getLocalClusterSyncTokenId()).addInstance(instance1.getSlingId(), cluster2, instance1.isLeader(), instance1.isLocal());
+        final BaseTopologyView view2 = new DummyTopologyView(view1.getLocalClusterSyncTokenId())
+                .addInstance(instance1.getSlingId(), cluster2, instance1.isLeader(), instance1.isLocal());
         DefaultInstanceDescription instance2 = (DefaultInstanceDescription) view2.getLocalInstance();
         instance2.setProperty("foo", "bar");
         mgr.handleNewView(view2);
@@ -275,14 +279,14 @@ public class TestViewStateManager {
 
             @Override
             public void sync(BaseTopologyView view, Runnable callback) {
-                synchronized(syncCallbacks) {
+                synchronized (syncCallbacks) {
                     syncCallbacks.add(callback);
                 }
             }
 
             @Override
             public void cancelSync() {
-                synchronized(syncCallbacks) {
+                synchronized (syncCallbacks) {
                     syncCallbacks.clear();
                 }
             }
@@ -295,7 +299,7 @@ public class TestViewStateManager {
         mgr.handleNewView(view);
         assertEquals(0, mgr.waitForAsyncEvents(1000));
         TestHelper.assertNoEvents(listener);
-        synchronized(syncCallbacks) {
+        synchronized (syncCallbacks) {
             assertEquals(1, syncCallbacks.size());
         }
         String id1 = UUID.randomUUID().toString();
@@ -304,7 +308,7 @@ public class TestViewStateManager {
         mgr.handleNewView(view2);
         assertEquals(0, mgr.waitForAsyncEvents(1000));
         TestHelper.assertNoEvents(listener);
-        synchronized(syncCallbacks) {
+        synchronized (syncCallbacks) {
             assertEquals(1, syncCallbacks.size());
             syncCallbacks.get(0).run();
             syncCallbacks.clear();
@@ -337,8 +341,7 @@ public class TestViewStateManager {
         mgr.bind(listener);
         mgr.handleChanging();
         DummyTopologyView oldView = new DummyTopologyView().addInstance();
-        DefaultInstanceDescription localInstance =
-                (DefaultInstanceDescription) oldView.getLocalInstance();
+        DefaultInstanceDescription localInstance = (DefaultInstanceDescription) oldView.getLocalInstance();
         localInstance.setProperty("foo", "bar1");
         mgr.handleNewView(oldView);
         TopologyEvent initEvent = EventHelper.newInitEvent(oldView.clone());
@@ -568,11 +571,12 @@ public class TestViewStateManager {
 
     @Test
     public void testClusterSyncService_noConcurrency() throws Exception {
-        final ch.qos.logback.classic.Logger commonsLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery.commons.providers");
+        final ch.qos.logback.classic.Logger commonsLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.sling.discovery.commons.providers");
         commonsLogger.setLevel(Level.INFO); // change here to DEBUG in case of issues with this test
         final Semaphore serviceSemaphore = new Semaphore(0);
         final ReentrantLock lock = new ReentrantLock();
-        final ClusterSyncServiceWithSemaphore cs = new ClusterSyncServiceWithSemaphore(lock, serviceSemaphore );
+        final ClusterSyncServiceWithSemaphore cs = new ClusterSyncServiceWithSemaphore(lock, serviceSemaphore);
         mgr = new ViewStateManagerImpl(lock, cs);
         final DummyListener listener = new DummyListener();
         mgr.bind(listener);
@@ -592,7 +596,6 @@ public class TestViewStateManager {
             public void run() {
                 mgr.handleNewView(view1);
             }
-
         });
         Thread.sleep(1000);
         TestHelper.assertNoEvents(listener);
@@ -609,7 +612,6 @@ public class TestViewStateManager {
             public void run() {
                 mgr.handleNewView(view2);
             }
-
         });
         logger.debug("run: waiting for 1sec");
         Thread.sleep(1000);
@@ -630,7 +632,8 @@ public class TestViewStateManager {
 
     @Test
     public void testOnlyDiffersInProperties() throws Exception {
-        final ch.qos.logback.classic.Logger discoveryLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery");
+        final ch.qos.logback.classic.Logger discoveryLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.sling.discovery");
         discoveryLogger.setLevel(Level.INFO); // changed from Level.DEBUG
         logger.info("testOnlyDiffersInProperties: start");
         final String slingId1 = UUID.randomUUID().toString();
@@ -643,7 +646,8 @@ public class TestViewStateManager {
                 .addInstance(slingId2, cluster, false, false)
                 .addInstance(slingId3, cluster, false, false);
         final DummyTopologyView view2 = DummyTopologyView.clone(view1).removeInstance(slingId2);
-        final DummyTopologyView view3 = DummyTopologyView.clone(view1).removeInstance(slingId2).removeInstance(slingId3);
+        final DummyTopologyView view3 =
+                DummyTopologyView.clone(view1).removeInstance(slingId2).removeInstance(slingId3);
         DummyTopologyView view1Cloned = DummyTopologyView.clone(view1);
 
         logger.info("testOnlyDiffersInProperties: handleNewView(view1)");
@@ -734,13 +738,16 @@ public class TestViewStateManager {
 
         final AtomicReference<TopologyView> topologyRef = new AtomicReference<>();
         if (minEventDelayHelepr) {
-            mgr.installMinEventDelayHandler(new DiscoveryService() {
+            mgr.installMinEventDelayHandler(
+                    new DiscoveryService() {
 
-                @Override
-                public TopologyView getTopology() {
-                    return topologyRef.get();
-                }
-            }, new DummyScheduler(), 1);
+                        @Override
+                        public TopologyView getTopology() {
+                            return topologyRef.get();
+                        }
+                    },
+                    new DummyScheduler(),
+                    1);
         }
 
         final String slingId1 = UUID.randomUUID().toString();
@@ -748,8 +755,7 @@ public class TestViewStateManager {
         final String clusterId = UUID.randomUUID().toString();
         final String syncToken1 = "s1";
         final LocalClusterView cluster1 = new LocalClusterView(clusterId, syncToken1);
-        final DummyTopologyView view1 = new DummyTopologyView(syncToken1)
-                .addInstance(slingId1, cluster1, true, true);
+        final DummyTopologyView view1 = new DummyTopologyView(syncToken1).addInstance(slingId1, cluster1, true, true);
         final String syncToken4 = "s4";
         final LocalClusterView cluster4 = new LocalClusterView(clusterId, syncToken4);
         final DummyTopologyView view4 = new DummyTopologyView(syncToken4)
@@ -772,11 +778,11 @@ public class TestViewStateManager {
         // for a view change to "go undetected" ie not trigger any topology change,
         // the list of instances must remain the same
         // (but the syncToken can differ and it can have suppressed clusterNodeIds)
-        for(int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             final String syncToken2SameAsS1 = "s1";
             final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2SameAsS1);
-            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2SameAsS1)
-                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            final DummyTopologyView view1Suppressed =
+                    new DummyTopologyView(syncToken2SameAsS1).addInstance(slingId1, cluster1Suppressed, true, true);
             cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(1));
             logger.info("testSuppression: handleNewView(view2[a])");
             mgr.handleNewView(view1Suppressed);
@@ -784,11 +790,11 @@ public class TestViewStateManager {
             assertEquals(0, mgr.waitForAsyncEvents(5000));
             TestHelper.assertNoEvents(listener);
         }
-        for(int i = 0; i < 100; i++) {
+        for (int i = 0; i < 100; i++) {
             final String syncToken2Different = "s1Suppressed";
             final LocalClusterView cluster1Suppressed = new LocalClusterView(clusterId, syncToken2Different);
-            final DummyTopologyView view1Suppressed = new DummyTopologyView(syncToken2Different)
-                    .addInstance(slingId1, cluster1Suppressed, true, true);
+            final DummyTopologyView view1Suppressed =
+                    new DummyTopologyView(syncToken2Different).addInstance(slingId1, cluster1Suppressed, true, true);
             cluster1Suppressed.setPartiallyStartedClusterNodeIds(Arrays.asList(1));
             logger.info("testSuppression: handleNewView(view2[b])");
             mgr.handleNewView(view1Suppressed);
@@ -816,13 +822,13 @@ public class TestViewStateManager {
         try {
             mgr.equalsIgnoreSyncToken(null);
             fail("should have thrown a NPE");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             // ok
         }
         assertTrue(mgr.equalsIgnoreSyncToken(view1));
 
         DummyTopologyView view;
-        for(int i = 1; i < 10; i++) {
+        for (int i = 1; i < 10; i++) {
             // same instances, same syncToken, no partiallyStartedInstances => true
             view = createTopology(view1, syncToken1, 0);
             assertTrue(mgr.equalsIgnoreSyncToken(view));
@@ -864,20 +870,17 @@ public class TestViewStateManager {
     private DummyTopologyView createTopology(String clusterId, String syncToken, int numInstances) {
         final LocalClusterView cluster = new LocalClusterView(clusterId, syncToken);
         final DummyTopologyView view = new DummyTopologyView(syncToken);
-        for(int i = 0; i < numInstances; i++) {
+        for (int i = 0; i < numInstances; i++) {
             view.addInstance(UUID.randomUUID().toString(), cluster, i == 0, i == 0);
         }
         return view;
     }
 
-    private DummyTopologyView createTopology(DummyTopologyView base, String syncToken,
-            int numAdditionalInstances) {
-        return createTopology(base.getLocalInstance().getClusterView(), syncToken,
-                numAdditionalInstances);
+    private DummyTopologyView createTopology(DummyTopologyView base, String syncToken, int numAdditionalInstances) {
+        return createTopology(base.getLocalInstance().getClusterView(), syncToken, numAdditionalInstances);
     }
 
-    private DummyTopologyView createTopology(ClusterView baseCluster, String syncToken,
-            int numAdditionalInstances) {
+    private DummyTopologyView createTopology(ClusterView baseCluster, String syncToken, int numAdditionalInstances) {
         final LocalClusterView cluster = new LocalClusterView(baseCluster.getId(), syncToken);
         final DummyTopologyView view2 = new DummyTopologyView(syncToken);
         for (InstanceDescription inst : baseCluster.getInstances()) {

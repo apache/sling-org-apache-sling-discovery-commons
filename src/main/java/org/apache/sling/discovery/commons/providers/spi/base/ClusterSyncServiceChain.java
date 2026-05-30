@@ -46,12 +46,12 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
      * cascaded sync with the provided ClusterSyncService.
      */
     public ClusterSyncServiceChain(ClusterSyncService... chain) {
-        if (chain==null || chain.length==0) {
+        if (chain == null || chain.length == 0) {
             throw new IllegalArgumentException("chain must be 1 or more");
         }
         this.chain = Arrays.asList(chain);
     }
-    
+
     @Override
     public void sync(BaseTopologyView view, Runnable callback) {
         // could also use Preconditions.checkNotNull
@@ -62,8 +62,11 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
         chainedSync(view, callback, chainIt, syncCnt.getAndIncrement());
     }
 
-    private void chainedSync(final BaseTopologyView view, final Runnable callback, 
-            final Iterator<ClusterSyncService> chainIt, final long executionCnt) {
+    private void chainedSync(
+            final BaseTopologyView view,
+            final Runnable callback,
+            final Iterator<ClusterSyncService> chainIt,
+            final long executionCnt) {
         if (!chainIt.hasNext()) {
             logger.debug("doSync: done with sync chain, invoking callback");
             callback.run();
@@ -78,7 +81,6 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
                     chainedSync(view, callback, chainIt, executionCnt);
                 }
             }
-            
         });
         canExecute(executionCnt);
     }
@@ -89,8 +91,10 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
         if (currentCnt > executionCnt + 1) {
             // that means sync or cancel has been invoked in the meantime
             // and we might have missed it
-            logger.info("canExecute : cancelling old, outdated sync ({} > {} + 1) (currentCnt > executionCnt + 1)",
-                    currentCnt, executionCnt);
+            logger.info(
+                    "canExecute : cancelling old, outdated sync ({} > {} + 1) (currentCnt > executionCnt + 1)",
+                    currentCnt,
+                    executionCnt);
             cancelSync();
             return false;
         }
@@ -105,5 +109,4 @@ public class ClusterSyncServiceChain implements ClusterSyncService {
             consistencyService.cancelSync();
         }
     }
-
 }

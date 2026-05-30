@@ -63,66 +63,74 @@ public class DummyClusterSyncService extends AbstractServiceWithBackgroundCheck 
 
     @Override
     public void sync(BaseTopologyView view, Runnable callback) {
-        startBackgroundCheck(debugName, new BackgroundCheck() {
+        startBackgroundCheck(
+                debugName,
+                new BackgroundCheck() {
 
-            @Override
-            public boolean check() {
-                boolean incremented = false;
-                try {
-                    if (!checkSemaphore.tryAcquire()) {
-                        checkBlocking.incrementAndGet();
-                        incremented = true;
-                        while (true) {
-                            try {
-                                checkSemaphore.acquire();
-                                break;
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
+                    @Override
+                    public boolean check() {
+                        boolean incremented = false;
+                        try {
+                            if (!checkSemaphore.tryAcquire()) {
+                                checkBlocking.incrementAndGet();
+                                incremented = true;
+                                while (true) {
+                                    try {
+                                        checkSemaphore.acquire();
+                                        break;
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
                             }
+                            return checkResult.get();
+                        } finally {
+                            if (incremented) {
+                                checkBlocking.decrementAndGet();
+                            }
+                            checkCounter.incrementAndGet();
                         }
                     }
-                    return checkResult.get();
-                } finally {
-                    if (incremented) {
-                        checkBlocking.decrementAndGet();
-                    }
-                    checkCounter.incrementAndGet();
-                }
-            }
-        }, callback, timeoutMillis, intervalMillis);
+                },
+                callback,
+                timeoutMillis,
+                intervalMillis);
     }
 
     public boolean waitForCheckCounterAtMin(final long minValue, long timeoutMillis) {
-        return waitForCondition(new Callable<Boolean>() {
+        return waitForCondition(
+                new Callable<Boolean>() {
 
-            @Override
-            public Boolean call() throws Exception {
-                return checkCounter.get() >= minValue;
-            }
-
-        }, timeoutMillis);
+                    @Override
+                    public Boolean call() throws Exception {
+                        return checkCounter.get() >= minValue;
+                    }
+                },
+                timeoutMillis);
     }
 
     public boolean waitForCheckBlockingAtMin(final int minBlockedCnt, long timeoutMillis) {
-        return waitForCondition(new Callable<Boolean>() {
+        return waitForCondition(
+                new Callable<Boolean>() {
 
-            @Override
-            public Boolean call() throws Exception {
-                return checkBlocking.get() >= minBlockedCnt;
-            }
-
-        }, timeoutMillis);
+                    @Override
+                    public Boolean call() throws Exception {
+                        return checkBlocking.get() >= minBlockedCnt;
+                    }
+                },
+                timeoutMillis);
     }
 
     public boolean waitForCheckBlockingAtMax(final int maxBlockedCnt, long timeoutMillis) {
-        return waitForCondition(new Callable<Boolean>() {
+        return waitForCondition(
+                new Callable<Boolean>() {
 
-            @Override
-            public Boolean call() throws Exception {
-                return checkBlocking.get() <= maxBlockedCnt;
-            }
-
-        }, timeoutMillis);
+                    @Override
+                    public Boolean call() throws Exception {
+                        return checkBlocking.get() <= maxBlockedCnt;
+                    }
+                },
+                timeoutMillis);
     }
 
     public void resetCounter() {
@@ -143,14 +151,15 @@ public class DummyClusterSyncService extends AbstractServiceWithBackgroundCheck 
     }
 
     public boolean waitForBackgroundCheckFinished(long timeoutMillis) {
-        return waitForCondition(new Callable<Boolean>() {
+        return waitForCondition(
+                new Callable<Boolean>() {
 
-            @Override
-            public Boolean call() throws Exception {
-                return !hasBackgroundCheckRunnable();
-            }
-
-        }, timeoutMillis);
+                    @Override
+                    public Boolean call() throws Exception {
+                        return !hasBackgroundCheckRunnable();
+                    }
+                },
+                timeoutMillis);
     }
 
     public boolean hasBackgroundCheckRunnable() {
@@ -186,5 +195,4 @@ public class DummyClusterSyncService extends AbstractServiceWithBackgroundCheck 
             throw new AssertionError("Got Exception: " + e, e);
         }
     }
-
 }

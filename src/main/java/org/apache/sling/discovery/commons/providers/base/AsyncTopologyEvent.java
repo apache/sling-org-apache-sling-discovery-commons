@@ -25,36 +25,37 @@ import org.slf4j.LoggerFactory;
 
 /** SLING-4755 : encapsulates an event that yet has to be sent (asynchronously) for a particular listener **/
 final class AsyncTopologyEvent implements AsyncEvent {
-    
+
     static final Logger logger = LoggerFactory.getLogger(AsyncTopologyEvent.class);
 
     final TopologyEventListener listener;
     final TopologyEvent event;
+
     AsyncTopologyEvent(TopologyEventListener listener, TopologyEvent event) {
-        if (listener==null) {
+        if (listener == null) {
             throw new IllegalArgumentException("listener must not be null");
         }
-        if (event==null) {
+        if (event == null) {
             throw new IllegalArgumentException("event must not be null");
         }
         this.listener = listener;
         this.event = event;
     }
+
     @Override
     public String toString() {
-        return "an AsyncTopologyEvent[event="+event+", listener="+listener+"]";
+        return "an AsyncTopologyEvent[event=" + event + ", listener=" + listener + "]";
     }
 
     /** Actual sending of the asynchronous event - catches RuntimeExceptions a listener can send. (Error is caught outside) **/
     public void trigger() {
         logger.trace("trigger: start");
-        try{
+        try {
             logger.debug("trigger: sending to listener: {}, event: {}", listener, event);
             listener.handleTopologyEvent(event);
-        } catch(final Exception e) {
-            logger.warn("trigger: handler threw exception. handler: "+listener+", exception: "+e, e);
+        } catch (final Exception e) {
+            logger.warn("trigger: handler threw exception. handler: " + listener + ", exception: " + e, e);
         }
         logger.trace("trigger: end: listener: {}, event: {}", listener, event);
     }
-
 }

@@ -40,11 +40,10 @@ public interface DiscoveryLiteConfig {
      * @return the timeout (in milliseconds) to be used when waiting for the sync tokens or id mapping
      */
     long getClusterSyncServiceTimeoutMillis();
-    
+
     /**
      * Returns the interval (in milliseconds) to be used when waiting for the sync tokens or id mapping
      * @return the interval (in milliseconds) to be used when waiting for the sync tokens or id mapping
      */
     long getClusterSyncServiceIntervalMillis();
-
 }

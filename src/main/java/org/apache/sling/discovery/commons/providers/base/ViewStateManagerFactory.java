@@ -30,9 +30,7 @@ import org.apache.sling.discovery.commons.providers.spi.ClusterSyncService;
  */
 public class ViewStateManagerFactory {
 
-    public static ViewStateManager newViewStateManager(Lock lock, 
-            ClusterSyncService consistencyService) {
+    public static ViewStateManager newViewStateManager(Lock lock, ClusterSyncService consistencyService) {
         return new ViewStateManagerImpl(lock, consistencyService);
     }
-
 }

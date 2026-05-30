@@ -29,14 +29,14 @@ public class DummySlingSettingsService implements SlingSettingsService {
     private String slingHome;
 
     public DummySlingSettingsService(String slingId) {
-        this(slingId, "/slingHome/"+slingId);
+        this(slingId, "/slingHome/" + slingId);
     }
-    
+
     public DummySlingSettingsService(String slingId, String slingHome) {
         this.slingId = slingId;
         this.slingHome = slingHome;
     }
-    
+
     @Override
     public String getAbsolutePathWithinSlingHome(String relativePath) {
         throw new IllegalStateException("not yet impl");
@@ -61,5 +61,4 @@ public class DummySlingSettingsService implements SlingSettingsService {
     public Set<String> getRunModes() {
         throw new IllegalStateException("not yet impl");
     }
-
 }

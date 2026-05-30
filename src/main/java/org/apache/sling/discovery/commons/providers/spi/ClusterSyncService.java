@@ -27,14 +27,14 @@ import org.apache.sling.discovery.commons.providers.BaseTopologyView;
  * The issue is described in length in SLING-4627 - the short
  * version is composed of two different factors:
  * <ul>
- * <li>concurrency of discovery service and its listeners on the 
- * different instances: upon a change in the topology it is 
+ * <li>concurrency of discovery service and its listeners on the
+ * different instances: upon a change in the topology it is
  * important that one listener doesn't do activity based on
  * an older incarnation of the topologyView than another listener
  * on another instance. they should change from one view to the
  * next view based on the same repository state.
  * </li>
- * <li>when an instance leaves the cluster (eg crashes), then 
+ * <li>when an instance leaves the cluster (eg crashes), then
  * depending on the repository it might have left a backlog around
  * which would yet have to be processed and which could contain
  * relevant topology-dependent data that should be waited for
@@ -60,7 +60,7 @@ public interface ClusterSyncService {
      * Starts the synchronization process and calls the provided
      * callback upon completion.
      * <p>
-     * sync() is not thread-safe and should not be invoked 
+     * sync() is not thread-safe and should not be invoked
      * concurrently.
      * <p>
      * If sync() gets called before a previous invocation finished,
@@ -69,7 +69,7 @@ public interface ClusterSyncService {
      * <p>
      * The synchronization process consists of making sure that
      * the repository has processed any potential backlog of instances
-     * that are no longer part of the provided, new view. Plus 
+     * that are no longer part of the provided, new view. Plus
      * it writes a 'sync-token' to a well-defined location, with
      * all peers doing the same, and upon seeing all other sync-tokens
      * declares successful completion - at which point it calls the
@@ -80,7 +80,6 @@ public interface ClusterSyncService {
      * successful syncing
      */
     void sync(BaseTopologyView view, Runnable callback);
-    
+
     void cancelSync();
-    
 }

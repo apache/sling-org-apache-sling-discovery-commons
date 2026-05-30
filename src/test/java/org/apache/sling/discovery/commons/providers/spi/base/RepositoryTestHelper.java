@@ -45,8 +45,7 @@ public class RepositoryTestHelper {
     }
 
     public static void dump(Node node) throws RepositoryException {
-        if (node.getPath().equals("/jcr:system")
-                || node.getPath().equals("/rep:policy")) {
+        if (node.getPath().equals("/jcr:system") || node.getPath().equals("/rep:policy")) {
             // ignore that one
             return;
         }
@@ -66,6 +65,4 @@ public class RepositoryTestHelper {
             dump(child);
         }
     }
-
-
 }

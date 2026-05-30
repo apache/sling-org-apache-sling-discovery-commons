@@ -18,8 +18,6 @@
  */
 package org.apache.sling.discovery.commons.providers.base;
 
-import static org.junit.Assert.fail;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,18 +26,20 @@ import org.apache.sling.discovery.TopologyEvent;
 import org.apache.sling.discovery.TopologyEventListener;
 import org.apache.sling.discovery.commons.providers.BaseTopologyView;
 
+import static org.junit.Assert.fail;
+
 public class DummyListener implements TopologyEventListener {
 
     private List<TopologyEvent> allEvents = new LinkedList<TopologyEvent>();
     private List<TopologyEvent> events = new LinkedList<TopologyEvent>();
     private TopologyEvent lastEvent;
-    
+
     public synchronized void handleTopologyEvent(TopologyEvent event) {
         events.add(event);
         allEvents.add(event);
         lastEvent = event;
     }
-    
+
     public synchronized List<TopologyEvent> getEvents() {
         return Collections.unmodifiableList(events);
     }
@@ -47,7 +47,7 @@ public class DummyListener implements TopologyEventListener {
     public synchronized int countEvents() {
         return events.size();
     }
-    
+
     public synchronized TopologyEvent getLastEvent() {
         return lastEvent;
     }
@@ -57,24 +57,23 @@ public class DummyListener implements TopologyEventListener {
     }
 
     public BaseTopologyView getLastView() {
-        if (lastEvent==null) {
+        if (lastEvent == null) {
             return null;
         } else {
-            switch(lastEvent.getType()) {
-            case TOPOLOGY_INIT:
-            case PROPERTIES_CHANGED:
-            case TOPOLOGY_CHANGED: {
-                return (BaseTopologyView) lastEvent.getNewView();
-            }
-            case TOPOLOGY_CHANGING:{
-                return (BaseTopologyView) lastEvent.getOldView();
-            }
-            default: {
-                fail("no other types supported yet");
-            }
+            switch (lastEvent.getType()) {
+                case TOPOLOGY_INIT:
+                case PROPERTIES_CHANGED:
+                case TOPOLOGY_CHANGED: {
+                    return (BaseTopologyView) lastEvent.getNewView();
+                }
+                case TOPOLOGY_CHANGING: {
+                    return (BaseTopologyView) lastEvent.getOldView();
+                }
+                default: {
+                    fail("no other types supported yet");
+                }
             }
         }
         return null;
     }
-    
 }

@@ -47,19 +47,18 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  * (thus all topology-dependent activity is now stalled and waiting)
  * and are aware of the new discoveryLite view.
  */
-@Component(service = { ClusterSyncService.class, SyncTokenService.class },
-    property = {
-            Constants.SERVICE_VENDOR + "=The Apache Software Foundation"
-    })
+@Component(
+        service = {ClusterSyncService.class, SyncTokenService.class},
+        property = {Constants.SERVICE_VENDOR + "=The Apache Software Foundation"})
 public class SyncTokenService extends AbstractServiceWithBackgroundCheck implements ClusterSyncService {
 
-    @Reference(policyOption=ReferencePolicyOption.GREEDY)
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     protected DiscoveryLiteConfig commonsConfig;
 
-    @Reference(policyOption=ReferencePolicyOption.GREEDY)
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     protected ResourceResolverFactory resourceResolverFactory;
 
-    @Reference(policyOption=ReferencePolicyOption.GREEDY)
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
     protected SlingSettingsService settingsService;
 
     protected ClusterSyncHistory clusterSyncHistory = new ClusterSyncHistory();
@@ -98,7 +97,7 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
     @Activate
     protected void activate() {
         this.slingId = settingsService.getSlingId();
-        logger.info("activate: activated with slingId="+slingId);
+        logger.info("activate: activated with slingId=" + slingId);
     }
 
     public void setConsistencyHistory(ClusterSyncHistory consistencyHistory) {
@@ -131,25 +130,31 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
 
     protected void syncToken(final BaseTopologyView view, final Runnable callback) {
 
-        startBackgroundCheck("SyncTokenService-" + view.getLocalClusterSyncTokenId(), new BackgroundCheck() {
+        startBackgroundCheck(
+                "SyncTokenService-" + view.getLocalClusterSyncTokenId(),
+                new BackgroundCheck() {
 
-            @Override
-            public boolean check() {
-                // 1) first storing my syncToken
-                final String localClusterSyncTokenId = view.getLocalClusterSyncTokenId();
-                if (!storeMySyncToken(localClusterSyncTokenId)) {
-                    // if anything goes wrong above, then this will mean for the others
-                    // that they will have to wait until the timeout hits
+                    @Override
+                    public boolean check() {
+                        // 1) first storing my syncToken
+                        final String localClusterSyncTokenId = view.getLocalClusterSyncTokenId();
+                        if (!storeMySyncToken(localClusterSyncTokenId)) {
+                            // if anything goes wrong above, then this will mean for the others
+                            // that they will have to wait until the timeout hits
 
-                    // so to try to avoid this, retry storing my sync token later:
-                    clusterSyncHistory.addHistoryEntry(view, "storing my syncToken ("+localClusterSyncTokenId+")");
-                    return false;
-                }
+                            // so to try to avoid this, retry storing my sync token later:
+                            clusterSyncHistory.addHistoryEntry(
+                                    view, "storing my syncToken (" + localClusterSyncTokenId + ")");
+                            return false;
+                        }
 
-                // 2) then check if all others have done the same already
-                return seenAllSyncTokens(view);
-            }
-        }, callback, commonsConfig.getClusterSyncServiceTimeoutMillis(), commonsConfig.getClusterSyncServiceIntervalMillis());
+                        // 2) then check if all others have done the same already
+                        return seenAllSyncTokens(view);
+                    }
+                },
+                callback,
+                commonsConfig.getClusterSyncServiceTimeoutMillis(),
+                commonsConfig.getClusterSyncServiceIntervalMillis());
     }
 
     private boolean storeMySyncToken(String syncTokenId) {
@@ -159,7 +164,7 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
             return false;
         }
         ResourceResolver resourceResolver = null;
-        try{
+        try {
             resourceResolver = getResourceResolver();
             final Resource resource = ResourceHelper.getOrCreateResource(resourceResolver, getSyncTokenPath());
             ModifiableValueMap syncTokens = resource.adaptTo(ModifiableValueMap.class);
@@ -168,30 +173,34 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
                 updateToken = true;
             } else {
                 Object existingToken = syncTokens.get(slingId);
-                if (existingToken==null || !existingToken.equals(syncTokenId)) {
+                if (existingToken == null || !existingToken.equals(syncTokenId)) {
                     updateToken = true;
                 }
             }
             if (updateToken) {
                 syncTokens.put(slingId, syncTokenId);
                 resourceResolver.commit();
-                logSilencer.infoOrDebug("storeMySyncToken-" + syncTokenId,
-                        "storeMySyncToken: stored syncToken of slingId="+slingId+" as="+syncTokenId);
+                logSilencer.infoOrDebug(
+                        "storeMySyncToken-" + syncTokenId,
+                        "storeMySyncToken: stored syncToken of slingId=" + slingId + " as=" + syncTokenId);
             } else {
-                logSilencer.infoOrDebug("storeMySyncToken-" + syncTokenId,
-                        "storeMySyncToken: syncToken was left unchanged for slingId="+slingId+" at="+syncTokenId);
+                logSilencer.infoOrDebug(
+                        "storeMySyncToken-" + syncTokenId,
+                        "storeMySyncToken: syncToken was left unchanged for slingId=" + slingId + " at=" + syncTokenId);
             }
             return true;
         } catch (LoginException e) {
-            logger.error("storeMySyncToken: could not login for storing my syncToken: "+e, e);
+            logger.error("storeMySyncToken: could not login for storing my syncToken: " + e, e);
             return false;
         } catch (PersistenceException e) {
-            logger.error("storeMySyncToken: got PersistenceException while storing my syncToken"
-                    + " (my slingId=" + slingId + ", syncToken=" + syncTokenId + "): " + e , e);
+            logger.error(
+                    "storeMySyncToken: got PersistenceException while storing my syncToken" + " (my slingId=" + slingId
+                            + ", syncToken=" + syncTokenId + "): " + e,
+                    e);
             return false;
         } finally {
             logger.trace("storeMySyncToken: end");
-            if (resourceResolver!=null) {
+            if (resourceResolver != null) {
                 resourceResolver.close();
             }
         }
@@ -204,7 +213,7 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
     private boolean seenAllSyncTokens(BaseTopologyView view) {
         logger.trace("seenAllSyncTokens: start");
         ResourceResolver resourceResolver = null;
-        try{
+        try {
             resourceResolver = getResourceResolver();
             Resource resource = ResourceHelper.getOrCreateResource(resourceResolver, getSyncTokenPath());
             ValueMap syncTokens = resource.adaptTo(ValueMap.class);
@@ -212,13 +221,14 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
 
             boolean success = true;
             StringBuffer historyEntry = new StringBuffer();
-            for (InstanceDescription instance : view.getLocalInstance().getClusterView().getInstances()) {
+            for (InstanceDescription instance :
+                    view.getLocalInstance().getClusterView().getInstances()) {
                 String instanceSlingId = instance.getSlingId();
                 Object currentValue = syncTokens.get(instanceSlingId);
                 if (currentValue == null) {
-                    String msg = "no syncToken yet of "+instance.getSlingId();
-                    logSilencer.infoOrDebug("seenAllSyncToken-" + syncToken + "-no-" + instanceSlingId,
-                            "seenAllSyncTokens: " + msg);
+                    String msg = "no syncToken yet of " + instance.getSlingId();
+                    logSilencer.infoOrDebug(
+                            "seenAllSyncToken-" + syncToken + "-no-" + instanceSlingId, "seenAllSyncTokens: " + msg);
                     if (historyEntry.length() != 0) {
                         historyEntry.append(",");
                     }
@@ -226,10 +236,10 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
                     success = false;
                 } else if (!syncToken.equals(currentValue)) {
                     String msg = "syncToken of " + instance.getSlingId()
-                                                + " is " + currentValue
-                                                + " waiting for " + syncToken;
-                    logSilencer.infoOrDebug("seenAllSyncToken-" + syncToken + "-wait-"+instanceSlingId,
-                            "seenAllSyncTokens: " + msg);
+                            + " is " + currentValue
+                            + " waiting for " + syncToken;
+                    logSilencer.infoOrDebug(
+                            "seenAllSyncToken-" + syncToken + "-wait-" + instanceSlingId, "seenAllSyncTokens: " + msg);
                     if (historyEntry.length() != 0) {
                         historyEntry.append(",");
                     }
@@ -238,31 +248,29 @@ public class SyncTokenService extends AbstractServiceWithBackgroundCheck impleme
                 }
             }
             if (!success) {
-                logSilencer.infoOrDebug("seenAllSyncToken-result-" + syncToken,
+                logSilencer.infoOrDebug(
+                        "seenAllSyncToken-result-" + syncToken,
                         "seenAllSyncTokens: not yet seen all expected syncTokens (see above for details)");
                 clusterSyncHistory.addHistoryEntry(view, historyEntry.toString());
                 return false;
             } else {
-                clusterSyncHistory.addHistoryEntry(view,
-                        "seen all syncTokens");
+                clusterSyncHistory.addHistoryEntry(view, "seen all syncTokens");
             }
 
             resourceResolver.commit();
-            logSilencer.infoOrDebug("seenAllSyncToken-result-" + syncToken,
-                    "seenAllSyncTokens: seen all syncTokens!");
+            logSilencer.infoOrDebug("seenAllSyncToken-result-" + syncToken, "seenAllSyncTokens: seen all syncTokens!");
             return true;
         } catch (LoginException e) {
-            logger.error("seenAllSyncTokens: could not login: "+e, e);
+            logger.error("seenAllSyncTokens: could not login: " + e, e);
             return false;
         } catch (PersistenceException e) {
-            logger.error("seenAllSyncTokens: got PersistenceException: "+e, e);
+            logger.error("seenAllSyncTokens: got PersistenceException: " + e, e);
             return false;
         } finally {
             logger.trace("seenAllSyncTokens: end");
-            if (resourceResolver!=null) {
+            if (resourceResolver != null) {
                 resourceResolver.close();
             }
         }
     }
-
 }

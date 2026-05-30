@@ -18,13 +18,13 @@
  */
 package org.apache.sling.discovery.commons.providers;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-
 import java.util.UUID;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.fail;
 
 public class DefaultClusterViewTest {
 

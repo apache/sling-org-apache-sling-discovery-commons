@@ -34,15 +34,15 @@ public class ClusterSyncHistory {
         String msg;
         String fullLine;
     }
-    
+
     /** the date format used in the truncated log of topology events **/
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
 
     protected List<HistoryEntry> history = new LinkedList<HistoryEntry>();
-    
+
     public List<String> getSyncHistory() {
         List<HistoryEntry> snapshot;
-        synchronized(history) {
+        synchronized (history) {
             snapshot = Collections.unmodifiableList(history);
         }
         List<String> result = new ArrayList<String>(snapshot.size());
@@ -53,8 +53,8 @@ public class ClusterSyncHistory {
     }
 
     protected void addHistoryEntry(BaseTopologyView view, String msg) {
-        synchronized(history) {
-            for(int i = history.size() - 1; i>=0; i--) {
+        synchronized (history) {
+            for (int i = history.size() - 1; i >= 0; i--) {
                 HistoryEntry entry = history.get(i);
                 if (!entry.view.equals(view)) {
                     // don't filter if the view starts differing,
@@ -79,5 +79,4 @@ public class ClusterSyncHistory {
             }
         }
     }
-    
 }

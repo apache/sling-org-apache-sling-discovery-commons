@@ -28,7 +28,7 @@ public class EventHelper {
 
     /** Simple factory method for creating a TOPOLOGY_INIT event with the given newView **/
     public static TopologyEvent newInitEvent(final BaseTopologyView newView) {
-        if (newView==null) {
+        if (newView == null) {
             throw new IllegalStateException("newView must not be null");
         }
         if (!newView.isCurrent()) {
@@ -39,7 +39,7 @@ public class EventHelper {
 
     /** Simple factory method for creating a TOPOLOGY_CHANGING event with the given oldView **/
     public static TopologyEvent newChangingEvent(final BaseTopologyView oldView) {
-        if (oldView==null) {
+        if (oldView == null) {
             throw new IllegalStateException("oldView must not be null");
         }
         if (oldView.isCurrent()) {
@@ -50,13 +50,13 @@ public class EventHelper {
 
     /** Simple factory method for creating a TOPOLOGY_CHANGED event with the given old and new views **/
     public static TopologyEvent newChangedEvent(final BaseTopologyView oldView, final BaseTopologyView newView) {
-        if (oldView==null) {
+        if (oldView == null) {
             throw new IllegalStateException("oldView must not be null");
         }
         if (oldView.isCurrent()) {
             throw new IllegalStateException("oldView must not be current");
         }
-        if (newView==null) {
+        if (newView == null) {
             throw new IllegalStateException("newView must not be null");
         }
         if (!newView.isCurrent()) {
@@ -65,14 +65,15 @@ public class EventHelper {
         return new TopologyEvent(Type.TOPOLOGY_CHANGED, oldView, newView);
     }
 
-    public static TopologyEvent newPropertiesChangedEvent(final BaseTopologyView oldView, final BaseTopologyView newView) {
-        if (oldView==null) {
+    public static TopologyEvent newPropertiesChangedEvent(
+            final BaseTopologyView oldView, final BaseTopologyView newView) {
+        if (oldView == null) {
             throw new IllegalStateException("oldView must not be null");
         }
         if (oldView.isCurrent()) {
             throw new IllegalStateException("oldView must not be current");
         }
-        if (newView==null) {
+        if (newView == null) {
             throw new IllegalStateException("newView must not be null");
         }
         if (!newView.isCurrent()) {
@@ -80,7 +81,7 @@ public class EventHelper {
         }
         return new TopologyEvent(Type.PROPERTIES_CHANGED, oldView, newView);
     }
-    
+
     /**
      * Returns a shorter toString than the default TopologyEvent.toString()
      * which can be rather large and unusable in log files
@@ -91,20 +92,19 @@ public class EventHelper {
         final String oldViewToString;
         final String newViewtoString;
         if (oldView instanceof BaseTopologyView) {
-            final BaseTopologyView baseOldView = (BaseTopologyView)oldView;
+            final BaseTopologyView baseOldView = (BaseTopologyView) oldView;
             oldViewToString = baseOldView.toShortString();
         } else {
             oldViewToString = String.valueOf(oldView);
         }
         if (newView instanceof BaseTopologyView) {
-            final BaseTopologyView baseNewView = (BaseTopologyView)newView;
+            final BaseTopologyView baseNewView = (BaseTopologyView) newView;
             newViewtoString = baseNewView.toShortString();
         } else {
             newViewtoString = String.valueOf(newView);
         }
-        return "TopologyEvent [type=" + event.getType() 
-            + ", oldView=" + oldViewToString
-            + ", newView=" + newViewtoString + "]";
+        return "TopologyEvent [type=" + event.getType()
+                + ", oldView=" + oldViewToString
+                + ", newView=" + newViewtoString + "]";
     }
-
 }

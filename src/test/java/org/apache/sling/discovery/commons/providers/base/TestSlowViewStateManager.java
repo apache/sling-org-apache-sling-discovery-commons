@@ -18,14 +18,12 @@
  */
 package org.apache.sling.discovery.commons.providers.base;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.ReentrantLock;
 
+import ch.qos.logback.classic.Level;
 import org.apache.sling.discovery.TopologyEvent;
 import org.apache.sling.discovery.commons.providers.DefaultClusterView;
 import org.apache.sling.discovery.commons.providers.DummyTopologyView;
@@ -33,25 +31,27 @@ import org.apache.sling.discovery.commons.providers.EventHelper;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.Level;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class TestSlowViewStateManager extends TestViewStateManager {
 
     /** does couple loops randomly calling handleChanging() (or not) and then handleNewView().
-     * Note: random is passed to allow customizing and not hardcoding this method to a particular random 
+     * Note: random is passed to allow customizing and not hardcoding this method to a particular random
      * @throws InterruptedException **/
     protected void randomEventLoop(final Random random, DummyListener... listeners) throws InterruptedException {
         TestHelper.randomEventLoop(mgr, null, 100, -1, random, listeners);
     }
-    
+
     @Test
     public void testClusterSyncService_withConcurrency() throws Exception {
-        final ch.qos.logback.classic.Logger commonsLogger = (ch.qos.logback.classic.Logger)LoggerFactory.getLogger("org.apache.sling.discovery.commons.providers");
+        final ch.qos.logback.classic.Logger commonsLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.apache.sling.discovery.commons.providers");
         commonsLogger.setLevel(Level.INFO); // change here to DEBUG in case of issues with this test
         final Semaphore serviceSemaphore = new Semaphore(0);
         final Semaphore testSemaphore = new Semaphore(0);
         final ReentrantLock lock = new ReentrantLock();
-        final ClusterSyncServiceWithSemaphore cs = new ClusterSyncServiceWithSemaphore(lock, serviceSemaphore );
+        final ClusterSyncServiceWithSemaphore cs = new ClusterSyncServiceWithSemaphore(lock, serviceSemaphore);
         mgr = new ViewStateManagerImpl(lock, cs);
         final DummyListener listener = new DummyListener();
         mgr.bind(listener);
@@ -68,13 +68,13 @@ public class TestSlowViewStateManager extends TestViewStateManager {
                 .addInstance(slingId2, cluster, false, false)
                 .addInstance(slingId3, cluster, false, false);
         final DummyTopologyView view2 = DummyTopologyView.clone(view1).removeInstance(slingId2);
-        final DummyTopologyView view3 = DummyTopologyView.clone(view1).removeInstance(slingId2).removeInstance(slingId3);
+        final DummyTopologyView view3 =
+                DummyTopologyView.clone(view1).removeInstance(slingId2).removeInstance(slingId3);
         async(new Runnable() {
 
             public void run() {
                 mgr.handleNewView(view1);
             }
-            
         });
         Thread.sleep(1000);
         TestHelper.assertNoEvents(listener);
@@ -90,7 +90,6 @@ public class TestSlowViewStateManager extends TestViewStateManager {
             public void run() {
                 mgr.handleNewView(view2);
             }
-            
         });
         logger.debug("run: waiting 1sec");
         Thread.sleep(1000);
@@ -114,15 +113,14 @@ public class TestSlowViewStateManager extends TestViewStateManager {
                     logger.debug("run2: done with handleNewView...");
                 } catch (InterruptedException e) {
                     // fail
-                    logger.error("interrupted: "+e, e);
+                    logger.error("interrupted: " + e, e);
                 }
             }
-            
         });
         logger.debug("run: waiting 1sec");
         Thread.sleep(1000);
         int remainingAsyncEvents = mgr.waitForAsyncEvents(2000);
-        logger.info("run: result of waitForAsyncEvent is: "+remainingAsyncEvents);
+        logger.info("run: result of waitForAsyncEvent is: " + remainingAsyncEvents);
         assertEquals("should have one thread now waiting", 1, serviceSemaphore.getQueueLength());
         assertEquals("should be acquiring (by thread2)", 1, testSemaphore.getQueueLength());
         // releasing the testSemaphore
@@ -130,13 +128,16 @@ public class TestSlowViewStateManager extends TestViewStateManager {
         logger.debug("run: waiting 1sec");
         Thread.sleep(1000);
         assertEquals("should have two async events now in the queue or being sent", 2, mgr.waitForAsyncEvents(500));
-        assertEquals("but should only have 1 thread actually sitting on the semaphore waiting", 1, serviceSemaphore.getQueueLength());
+        assertEquals(
+                "but should only have 1 thread actually sitting on the semaphore waiting",
+                1,
+                serviceSemaphore.getQueueLength());
         logger.debug("run: releasing consistencyService");
         serviceSemaphore.release(1); // release the first one only
         logger.debug("run: waiting 1sec");
         Thread.sleep(1000);
         assertFalse("should not be locked", lock.isLocked());
-        TestHelper.assertNoEvents(listener); // this should not have triggered any event 
+        TestHelper.assertNoEvents(listener); // this should not have triggered any event
         serviceSemaphore.release(1); // then release the 2nd one
         logger.debug("run: waiting 1sec");
         Thread.sleep(1000);
@@ -145,5 +146,4 @@ public class TestSlowViewStateManager extends TestViewStateManager {
         assertEvents(listener, changedEvent);
         commonsLogger.setLevel(Level.INFO); // back to default
     }
-
 }
