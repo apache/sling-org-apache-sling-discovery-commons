@@ -36,6 +36,7 @@ import org.apache.sling.discovery.TopologyEvent;
 import org.apache.sling.discovery.TopologyEvent.Type;
 import org.apache.sling.discovery.TopologyEventListener;
 import org.apache.sling.discovery.TopologyView;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
@@ -221,6 +222,17 @@ public class TestInitDelayingTopologyEventListener {
                 return null;
             }
         };
+    }
+
+    @BeforeClass
+    public static void beforeSuite() {
+        // When the jacoco agent is active, the instrumentation changes the timing of the first test which can cause
+        // unstable test results if the background threads run out of order. This dummy code attempts to fix the agent's
+        // overhead on the first test by using a call to "warm up" JaCoCo before the actual tests begin.
+        final TopologyEventListener delegate = Mockito.mock(TopologyEventListener.class);
+        InitDelayingTopologyEventListener warmupListener = new InitDelayingTopologyEventListener(5000, delegate);
+        warmupListener.handleTopologyEvent(Mockito.mock(TopologyEvent.class));
+        warmupListener.dispose();
     }
 
     @Test
@@ -444,11 +456,9 @@ public class TestInitDelayingTopologyEventListener {
     public void testProperties() throws Exception {
         final TestListener delegate = new TestListener();
         final Scheduler scheduler = createScheduler();
-        // NOTE: sometimes the 1 second startup delay didn't appear to be enough
-        //   and events were not delayed as expected.
-        //   Bumped the startup delay to 2 seconds for a more stable test.
+
         InitDelayingTopologyEventListener listener =
-                new InitDelayingTopologyEventListener(2, delegate, scheduler, logger);
+                new InitDelayingTopologyEventListener(1, delegate, scheduler, logger);
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_INIT));
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGING));
         listener.handleTopologyEvent(createEvent(Type.TOPOLOGY_CHANGED));
