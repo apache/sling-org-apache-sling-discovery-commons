@@ -230,7 +230,7 @@ public class TestInitDelayingTopologyEventListener {
         // unstable test results if the background threads run out of order. This dummy code attempts to fix the agent's
         // overhead on the first test by using a call to "warm up" JaCoCo before the actual tests begin.
         final TopologyEventListener delegate = Mockito.mock(TopologyEventListener.class);
-        InitDelayingTopologyEventListener warmupListener = new InitDelayingTopologyEventListener(5000, delegate);
+        InitDelayingTopologyEventListener warmupListener = new InitDelayingTopologyEventListener(1, delegate);
         warmupListener.handleTopologyEvent(Mockito.mock(TopologyEvent.class));
         warmupListener.dispose();
     }
